@@ -1,3 +1,53 @@
+#transform QW form to Jayant's form
+nettransform:=function(network)
+local a, i, b, c, e1, e2, e, f, nSources, nEdgesSource,j,Edges;
+a:=network[1];
+e:=[ ];
+	while Size(a)>0 do
+		b:=[a[1][1]];
+		c:=[a[1]];
+			for i in [2..Size(a)] do
+				if a[1][2]=a[i][2] then
+					Append(b,[a[i][1]]);
+					Append(c,[a[i]]);
+				fi;
+			od;
+		e1:=Union(a[1][2],b);
+		e2:=[a[1][2],e1];
+		Append(e,[e2]);
+		a:=Difference(a,c);
+	od;
+a:=network[2];
+f:=[ ];
+	while Size(a)>0 do
+		b:=[a[1][1]];
+		c:=[a[1]];
+			for i in [2..Size(a)] do
+				if a[1][2]=a[i][2] then
+					Append(b,[a[i][1]]);
+					Append(c,[a[i]]);
+				fi;
+			od;
+
+		e1:=Union(a[1][2],b);
+		e2:=[a[1][2],e1];
+		Append(f,[e2]);
+		a:=Difference(a,c);
+	od;
+Append(e,f);
+e:=[e];
+nSources:=network[1][1][1]-1;
+Edges:=[];
+	for j in [1..Size(network[1])] do
+		Append(Edges,[network[1][j][1]]);
+	od;
+nEdgesSource:=Maximum(Edges);
+Append(e,[nSources]);
+Append(e,[nEdgesSource]);
+return e;
+end;
+
+
 matrixperm:=function(A,c1,c2)
 local B,C,CC;
 	B:=TransposedMat(A);
@@ -645,3 +695,234 @@ local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,O
     Anet[3]:=Anet[3]+1;
     return [ trans_ineq, RRparse(Anet, trans_ineq ) ];
  end;
+ 
+ ##subfunction that extracts In(t)s
+numOfSinks:=function(net)
+	local W,i,Sinks;
+	W:=net[2];
+	Sinks:=[];
+	for i in [1..Size(W)] do
+	    if not W[i][2] in Sinks then
+			Append(Sinks,[W[i][2]]);
+		fi;
+	od;
+	return Sinks;
+end;
+
+############Common information decomposition on sinks
+AddRateVariable2:=function(net,sink1,sink2)
+	local Sinks,newedge1,newedge2,newedge3,newedge4, nEdges, nSources, Q, W;
+	if Maximum(sink1,sink2)>Size(net[2]) or Minimum(sink1,sink2)<0 then
+		Print("Error! Please input the right index of sink nodes.");
+		return;
+	fi;
+	Sinks:=numOfSinks(net);
+	nEdges:=Size(net[1]);
+	nSources:=net[1][1][1]-1;
+	newedge3:=[nEdges+nSources+1];
+	newedge4:=[nEdges+nSources+2];
+	Append(newedge3,[Sinks[sink1]]);
+	Append(newedge4,[Sinks[sink2]]);
+	Q:=ShallowCopy(net[1]);
+	W:=ShallowCopy(net[2]);
+	Append(Q,[newedge3]);
+	Append(Q,[newedge4]);
+	return [Q,W];
+end;
+
+Net2CommonInforNetgeneral:=function(net,sourcee1,sourcee2)
+	local source1,source2,nSources,nEdges,Q,W,n1,n2,n3,n33,n4,n44,n5,i,j;
+	source1:=Minimum(sourcee1,sourcee2);
+	source2:=Maximum(sourcee1,sourcee2);
+	nSources:=net[1][1][1]-1;
+	nEdges:=Size(net[1]);
+	if Minimum(source1, source2)<1 then
+		Print("Error!!! Input source1 and source2 should be greater than or equal to 0");
+		return;
+	fi;
+	if Maximum(source1,source2)>nSources then
+		Print("Error!!! Input source1 and source2 should be less than or equal to # of sources");
+		return;
+	fi;
+	if source1=source2 then
+		Print("Error!!! source1 source2 should be different");
+		return;
+	fi;
+	if nSources=1 then
+		Print("Error!!! Input net should have at least 2 sources");
+		return;
+	fi;
+	Q:=[];
+	n1:=[nSources+2,[source1, nSources+1]];
+	n2:=[nSources+3,[source2, nSources+1]];
+	Append(Q,[n1,n2]);
+	for i in [1..Size(net[1])] do
+		n3:=ShallowCopy(net[1][i]);
+		n3[1]:=n3[1]+3;
+		n33:=ShallowCopy(n3[2]);
+		for j in [1..Size(n33)] do
+			if n33[j]>nSources then
+				n33[j]:=n33[j]+3;
+			elif n33[j]=source1 then
+				n33[j]:=nSources+2;
+			elif n33[j]=source2 then
+				n33[j]:=nSources+3;
+			fi;
+		od;
+		Sort(n33);
+		n3[2]:=n33;
+		Append(Q,[n3]);
+	od;
+	W:=[];
+	for i in [1..Size(net[2])] do
+		n4:=ShallowCopy(net[2][i]);
+		n44:=ShallowCopy(n4[2]);
+		for j in [1..Size(n44)] do
+			if n44[j]=source1 then
+				n44[j]:=nSources+2;
+			elif n44[j]=source2 then
+				n44[j]:=nSources+3;
+			elif n44[j]>nSources then
+				n44[j]:=n44[j]+3;
+			fi;
+		od;
+		Sort(n44);
+		n4[2]:=n44;
+		if n4[1]=source1 then
+			n5:=ShallowCopy(n4);
+			n5[1]:=nSources+1;
+			Append(W,[n4,n5]);
+		elif n4[1]=source2 then
+			n5:=ShallowCopy(n4);
+			n5[1]:=nSources+1;
+			Append(W,[n4,n5]);
+		else
+			Append(W,[n4]);
+		fi;
+	od;
+	return [Q,W];
+end;
+
+####sink source merge with 8 variables
+SinkSourceMerge2:=function(net1,sink1,sink2,net2,source1,source2)
+local Anet1,extranSources1,nSources1,nSources2,nEdges1,AQ1,AW1,i,j,n1,n11,r1,Dsources2,
+r2,r4,Addrateindex,Sinks1,n2,n22,n222,r3,IncomingMessageofsink,extranEdges;
+Anet1:=ShallowCopy(net1);
+nSources1:=net1[1][1][1]-1;
+nSources2:=net2[1][1][1]-1;
+nEdges1:=Size(net1[1]);
+if Minimum(source1, source2)<1 then
+	Print("Error!!! Input source1 and source2 should be greater than or equal to 0");
+	return;
+fi;
+if Maximum(source1,source2)>nSources2 then
+	Print("Error!!! Input source1 and source2 should be less than or equal to # of sources");
+	return;
+fi;
+if source1=source2 then
+	Print("Error!!! source1 source2 should be different");
+	return;
+fi;
+if nSources2=1 then
+	Print("Error!!! Input net should have at least 2 sources");
+	return;
+fi;
+extranSources1:=nSources2-2;
+if nSources2>2 then
+	AQ1:=[];
+	for i in [1..Size(Anet1[1])] do
+	    n1:=ShallowCopy(Anet1[1][i]);
+		if n1[1]>nSources1 then
+			n1[1]:=n1[1]+extranSources1;
+		fi;
+		n11:=ShallowCopy(n1[2]);
+		for j in [1..Size(n11)] do
+			if n11[j]>nSources1 then
+				n11[j]:=n11[j]+extranSources1;
+			fi;
+		od;
+		n1[2]:=n11;
+		Append(AQ1,[n1]);
+	od;
+	AW1:=[];
+	for i in [1..Size(Anet1[2])] do
+		n1:=ShallowCopy(Anet1[2][i]);
+		if n1[1]>nSources1 then
+			n1[1]:=n1[1]+extranSources1;
+		fi;
+		n11:=ShallowCopy(n1[2]);
+		for j in [1..Size(n11)] do
+			if n11[j]>nSources1 then
+				n11[j]:=n11[j]+extranSources1;
+			fi;
+		od;
+		n1[2]:=n11;
+		Append(AW1,[n1]);
+	od;
+else
+AQ1:=ShallowCopy(Anet1[1]);
+AW1:=ShallowCopy(Anet1[2]);
+fi;
+extranEdges:=nSources1+nEdges1+1;
+Dsources2:=[-1];
+if extranSources1>0 then
+	r1:=rec();
+	Dsources2:=Difference([1..nSources2],[source1,source2]);
+	for i in [1..Size(Dsources2)] do
+		r1.(Dsources2[i]):=nSources1+i;
+	od;
+fi;
+r2:=rec();
+Addrateindex:=nSources1+nEdges1+extranSources1;
+Sinks1:=numOfSinks([AQ1,AW1]);
+r2.(source1):=Sinks1[sink1];
+r2.(source2):=Sinks1[sink2];
+r4:=rec();
+r4.(source1):=1+Addrateindex;
+r4.(source2):=2+Addrateindex;
+Append(AQ1,[[r4.(source1),r2.(source1)]]);
+Append(AQ1,[[r4.(source2),r2.(source2)]]);	
+##Append(AQ1,[[Addrateindex+1,Sinks1[sink1]]]);
+##Append(AQ1,[[Addrateindex+2,Sinks1[sink2]]]);
+for i in [1..Size(net2[1])] do
+	n2:=ShallowCopy(net2[1][i]);
+	n2[1]:=n2[1]+Addrateindex;
+	n22:=ShallowCopy(n2[2]);
+	n222:=[];
+	for j in [1..Size(n22)] do
+		if n22[j] in [source1,source2] then
+			n222:=Union(n222,[r4.(n22[j])]);
+		elif n22[j] in Dsources2 then
+			n222:=Union(n222,[r1.(n22[j])]);
+		else
+			n222:=Union(n222,[n22[j]+Addrateindex]);
+		fi;
+	od;
+	n2[2]:=n222;
+	Append(AQ1,[n2]);
+od;
+r3:=rec();
+r3.(source1):=sink1;
+r3.(source2):=sink2;
+for i in [1..Size(net2[2])] do
+	n2:=ShallowCopy(net2[2][i]);
+	n22:=ShallowCopy(n2[2]);
+	n222:=[];
+	for j in [1..Size(n22)] do
+		if n22[j] in [source1,source2] then
+			n222:=Union(n222,[r4.(n22[j])]);
+		elif n22[j] in Dsources2 then
+			n222:=Union(n222,[r1.(n22[j])]);
+		else
+			n222:=Union(n222,[n22[j]+Addrateindex]);
+		fi;
+	od;
+	n2[2]:=n222;
+	if n2[1] in [source1,source2] then
+		n2[1]:=r4.(n2[1]);
+		Append(AW1,[n2]);
+	fi;
+	
+od;
+return [AQ1,AW1];
+end;
