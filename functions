@@ -106,6 +106,19 @@ od;
 return SortColumnDescent(Aprime);
 end;
 
+matrixpermForCnet:=function(A,listofedges)
+local i,c1,c2,Aprime;
+Aprime:=ShallowCopy(A);
+for i in [1..Size(listofedges)] do
+	c1:=i;
+	c2:=set2int([listofedges[i]]);
+	if not c1=c2 then
+		Aprime:=matrixperm(Aprime,c1,c2);
+	fi;
+od;
+return Aprime;
+end;
+
 SortAddedVariableForAnet:=function(A1,N)
 	local AT,a,list1;
 	a:=Size(A1[1]);#number of columns
@@ -492,6 +505,10 @@ NCRateRegionOBForrMarginalEntropy:=function ( ncinstance, usesym, optargs )
        String( Size( rlist1[2] ) ), 
        ", \n\tDD stepsizes beyond initial hull = ", String( rlist1[3][2] ) ) 
      );
+          ####
+    rlist1[2]:=CombineHandEqual(rlist1[2],AB[3],ncinstance[3]);
+    rlist1[1]:=CombineVandEqual(rlist1[1],AB[3],ncinstance[3]);
+    #####
     rrA := [  ];
     rrb := [  ];
     for row  in rlist1[2]  do
@@ -548,6 +565,7 @@ NCRateRegionOBForrMarginalEntropyNoEE:=function ( ncinstance, usesym, optargs )
     onemap, nslist, idx, nsrec, los, lolos, Oi, O, trans_ineq,conineq,A1,b1,AT,indi,AB;
     rlist := NCShannonBoundedForrMarginalEntropy( ncinstance );
     A := rlist[1];
+    A:=matrixpermForCnet(A,[1..ncinstance[3]]);
     b := rlist[2];
     linrows := rlist[3];
     if usesym = false  then
@@ -584,10 +602,6 @@ NCRateRegionOBForrMarginalEntropyNoEE:=function ( ncinstance, usesym, optargs )
        String( Size( rlist1[2] ) ), 
        ", \n\tDD stepsizes beyond initial hull = ", String( rlist1[3][2] ) ) 
      );
-     ####
-    rlist1[2]:=CombineHandEqual(rlist1[2],AB[3],ncinstance[3]);
-    rlist1[1]:=CombineVandEqual(rlist1[1],AB[3],ncinstance[3]);
-    #####
     rrA := [  ];
     rrb := [  ];
     for row  in rlist1[2]  do
