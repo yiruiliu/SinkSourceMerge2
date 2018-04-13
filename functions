@@ -492,10 +492,6 @@ NCRateRegionOBForrMarginalEntropy:=function ( ncinstance, usesym, optargs )
        String( Size( rlist1[2] ) ), 
        ", \n\tDD stepsizes beyond initial hull = ", String( rlist1[3][2] ) ) 
      );
-     ####
-    rlist1[2]:=CombineHandEqual(rlist1[2],AB[3],ncinstance[3]);
-    rlist1[1]:=CombineVandEqual(rlist1[1],AB[3],ncinstance[3]);
-    #####
     rrA := [  ];
     rrb := [  ];
     for row  in rlist1[2]  do
