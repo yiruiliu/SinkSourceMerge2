@@ -1,0 +1,647 @@
+matrixperm:=function(A,c1,c2)
+local B,C,CC;
+	B:=TransposedMat(A);
+	C:=ShallowCopy(B);
+	C[c1]:=B[c2];
+	C[c2]:=B[c1];
+	CC:=TransposedMat(C);
+	return CC;
+end;
+
+MatrixAddColumn:=function(A,b)
+	local AT,Af;
+	AT:=TransposedMat(A);
+	AT:=ShallowCopy(AT);
+	Append(AT,[b]);
+	Af:=TransposedMat(AT);
+	return Af;
+end;
+
+MatrixRemoveColumn:=function(A,index)
+	local AT,Af;
+	AT:=TransposedMat(A);
+	AT:=ShallowCopy(AT);
+	Remove(AT,index);
+	Af:=TransposedMat(AT);
+	return Af;
+end;
+
+MatrixGetColumn:=function(A,index)
+	local AT,b;
+	AT:=TransposedMat(A);
+	AT:=ShallowCopy(AT);
+	b:=AT[index];
+	return b;
+end;
+
+SortColumnDescent:=function(A)
+	local AT,list1;
+	AT:=TransposedMat(A);
+	AT:=ShallowCopy(AT);
+	list1:=Reversed([1..Size(AT)]);
+	SortParallel(list1,AT);
+	return TransposedMat(AT);
+end;
+
+matrixpermForEE:=function(A,listofedges)
+local i,c1,c2,Aprime;
+Aprime:=ShallowCopy(A);
+for i in [1..Size(listofedges)] do
+	c1:=i;
+	c2:=set2int([listofedges[i]]);
+	if not c1=c2 then
+		Aprime:=matrixperm(Aprime,c1,c2);
+	fi;
+od;
+return SortColumnDescent(Aprime);
+end;
+
+SortAddedVariableForAnet:=function(A1,N)
+	local AT,a,list1;
+	a:=Size(A1[1]);#number of columns
+	AT:=TransposedMat(A1);
+	list1:=[N-2,N-1,N];
+	Append(list1,[1..N-3]);
+	Append(list1,[N+1..Size(A1[1])]);
+	AT:=ShallowCopy(AT);
+	SortParallel(list1,AT);
+	return TransposedMat(AT);
+end;
+
+#####LP   max c'x over Ax<=b rlist[3] is the objective value, rlist[5] is the x*
+LPyirui:=function(obj,A,b,linrows,qs_exec)
+local  rlist, s;
+    rlist := LoadQSLP( [  ], A, b,linrows, qs_exec );
+    s := rlist[1];
+    LoadQSLPobj( s, obj );
+    SolveQSLP( s, [  ] );
+    rlist := GetQSLPsol_primal( s );
+    return [rlist[3],rlist[5]];
+end;    
+
+LPyirui1:=function(obj,A,b,linrows,qs_exec)
+local  rlist, s;
+    rlist := LoadQSLP( obj, A, b,linrows, qs_exec );
+    s := rlist[1];
+    SolveQSLP( s, [2] );
+    rlist := GetQSLPsol_primal( s );
+    return [rlist[3],rlist[5]];
+end;    
+
+EqualityEliminationDetectfFullDim:=function(A,b,qs_exec)
+	local f,AT,Anew,addrow,addcolumn,bnew,XFVAL;
+	f:=ZeroMutable([1..Size(A[1])]);
+	Append(f,[1]);
+	addcolumn:=ZeroMutable([1..Size(A)])+1;
+	Anew:=MatrixAddColumn(A,addcolumn);
+	addrow:=ZeroMutable([1..Size(A[1])]);
+	Append(addrow,[1]);
+	Anew:=ShallowCopy(Anew);
+	Append(Anew,[addrow]);
+	bnew:=ShallowCopy(b);
+	Append(bnew,[1]);
+	XFVAL:=LPyirui1(f,Anew,bnew,[ ],qs_exec);
+	return XFVAL;
+end;
+
+#for i in [1..Size(Anew[1])-1] do
+#	z:=ZeroMutable([1..Size(Anew[1])]);
+#	z[i]:=-1;
+#	Append(Anew,[z]);
+#	Append(bnew,[0]);
+#od;
+
+EqualityEliminationDual:=function(A,b,qs_exec)
+	local A1,Aprime,addcolumn,aa,bprime,f,zj,linrows,XFVAL,i;
+	A1:=ShallowCopy(A);
+	addcolumn:=ZeroMutable([1..Size(A1[1])]);
+	Append(A1,[addcolumn]);
+	Aprime:=TransposedMat(A1);
+	Aprime:=ShallowCopy(Aprime);
+	aa:=ZeroMutable([1..Size(Aprime[1])])+1;
+	Append(Aprime,[aa]);
+	bprime:=ZeroMutable([1..Size(Aprime)-1]);
+	Append(bprime,[1]);
+	f:=ShallowCopy(b);
+	Append(f,[1]);
+	linrows:=[1..Size(Aprime)];
+	for i in [1..Size(Aprime[1])] do
+		zj:=ZeroMutable([1..Size(Aprime[1])]);
+		zj[i]:=-1;  #add -1x<=0 for lower bound
+		Append(Aprime,[zj]);
+		Append(bprime,[0]);
+	od;
+	XFVAL:=LPyirui1(-f,Aprime,bprime,linrows,qs_exec);
+	return XFVAL;
+end;
+
+EqualityEliminationEE:=function(Equal,A)
+	local AT,AA,i,jb,R,z,posi,p1,rr,j,c,AaT,Z;
+	AA:=ShallowCopy(A);
+	AT:=TransposedMat(AA);
+	jb:=RREF(Equal);
+	Z:=[];
+	for i in [1..Size(jb)] do
+		R:=jb[i];
+		z:=PositionNthOccurrence(R,1,1); #jb(i)
+		if not z=fail then
+			Append(Z,[z]);
+			R[z]:=0;
+			posi:=[1..Size(R)];
+			p1:=PositionsProperty(R,IsZero);
+			rr:=Difference(posi,p1); #find(R~=0);
+			AaT:=NullMat(Size(AT),Size(AT[1]));
+			for j in [1..Size(rr)] do
+				c:=AT[z]*-R[rr[j]];
+				AaT[rr[j]]:=c;
+			od;
+			AA:=AA+TransposedMat(AaT);
+		fi;
+	od;
+	AT:=TransposedMat(AA);
+	AT:=ShallowCopy(AT);
+	for i in [1..Size(Z)] do
+		AT[Z[i]]:=AT[Z[i]]*0;
+	od;
+	AA:=TransposedMat(AT);
+	return AA;
+end;
+
+EqualityEliminationinitialize:=function(Equal,Amatrix,b,listofedge,Anet)
+	local Equalp,Amatrixp,Equalp_c,Amatrixp_b,aa,ET,AT,E5,E6,Vcommon,V5,V6,i,
+	vcommon,v5,v6;
+	Equalp:=matrixpermForEE(Equal,listofedge);
+	Amatrixp:=matrixpermForEE(Amatrix,listofedge);
+	##### add v1, v2, v3 for Anet
+	if Anet=true then
+		E6:=listofedge[Size(listofedge)];
+		E5:=listofedge[Size(listofedge)-1];
+		Vcommon:=ZeroMutable([1..Size(Equalp[1])]);
+		Vcommon[set2int([E5,E6])]:=1;
+		Vcommon[E5]:=-1;
+		Vcommon[E6]:=-1;
+		Vcommon:=Reversed(Vcommon);
+		Append(Vcommon,[0,0,1]);
+		V5:=ZeroMutable([1..Size(Equalp[1])]);
+		V5[E5]:=-1;
+		V5:=Reversed(V5);
+		Append(V5,[0,1,1]);
+		V6:=ZeroMutable([1..Size(Equalp[1])]);
+		V6[E6]:=-1;
+		Append(V6,[1,0,1]);
+		aa:=ZeroMutable([1..Size(Equalp)]);
+		for i in [1..3] do
+			Equalp:=MatrixAddColumn(Equalp,aa);
+		od;
+		Equalp:=ShallowCopy(Equalp);
+		Append(Equalp,[Vcommon]);
+		Append(Equalp,[V5]);
+		Append(Equalp,[V6]);
+		aa:=ZeroMutable([1..Size(Amatrixp)]);
+		for i in [1..3] do
+			Amatrixp:=MatrixAddColumn(Amatrixp,aa);
+		od;
+		vcommon:=ZeroMutable([1..Size(Amatrixp[1])]);
+		vcommon[Size(vcommon)]:=-1;
+	    Amatrixp:=ShallowCopy(Amatrixp);
+		Append(Amatrixp,[vcommon]);
+		Append(b,[0]);
+		v5:=ZeroMutable([1..Size(Amatrixp[1])]);
+		v5[Size(v5)-1]:=-1;
+		Append(Amatrixp,[v5]);
+		Append(b,[0]);
+		v6:=ZeroMutable([1..Size(Amatrixp[1])]);
+		v6[Size(v6)-2]:=-1;
+		Append(Amatrixp,[v6]);
+		Append(b,[0]);
+	fi;
+	####
+	aa:=ZeroMutable([1..Size(Equalp)]);
+	Equalp_c:=MatrixAddColumn(Equalp,aa);
+	Amatrixp_b:=MatrixAddColumn(Amatrixp,-b);
+	return [Equalp_c,Amatrixp_b];
+end;
+
+
+
+EqualityEliminationMain:=function(Equal,Amatrix,b,listofedge,qs_exec,Anet)
+	local AllEqual,Equalp_c,Amatrixp_b,A12,FVAL,AA,A1,b1,XF,XF1,pz0,
+	pz,X1,AA1;
+	AllEqual:=[];
+	A12:=EqualityEliminationinitialize(Equal,Amatrix,b,listofedge,Anet);
+	Equalp_c:=A12[1];
+	Amatrixp_b:=A12[2];
+	Append(AllEqual,Equalp_c);
+	FVAL:=0;
+	while FVAL=0 do
+		AA:=EqualityEliminationEE(Equalp_c,Amatrixp_b);
+		A1:=ShallowCopy(AA);
+		b1:=-MatrixGetColumn(AA,Size(AA[1]));
+		A1:=MatrixRemoveColumn(A1,Size(A1[1]));
+		XF:=EqualityEliminationDetectfFullDim(A1,b1,qs_exec);
+		FVAL:=XF[1];
+		if FVAL=0 then
+			XF1:=EqualityEliminationDual(A1,b1,qs_exec);
+			X1:=XF1[2];
+			AA1:=MatrixAddColumn(A1,-b1);
+			pz0:=PositionsProperty(X1,IsZero);
+			pz:=Difference([1..Size(X1)],pz0);
+			Equalp_c:=AA1{pz};
+			Append(AllEqual,Equalp_c);
+			Remove(pz0,Size(pz0));
+			Amatrixp_b:=AA1{pz0};
+		fi;
+	od;
+    return [A1,b1,AllEqual];
+end;
+
+NCShannonBoundedForrMarginalEntropy:=function ( ncinstance )
+    local  ShOB, i, linrows, con, conlin, j, conineq;
+    ShOB := GenShannonUnBounded( ncinstance[3] );
+    i := Size( ShOB[1] ) + 1;
+    linrows := [  ];
+    for con  in ncinstance[1]  do     #### H(Out(t),In(t))=H(In(t))
+        conlin := ZeroMutable( [ 1 .. 2 ^ ncinstance[3] - 1 ] );
+        conlin[set2int( con[1] )] := 1;
+        conlin[set2int( con[2] )] := -1;
+        Append( ShOB[1], [ conlin ] );
+        Append( ShOB[2], [ 0 ] );
+        Append( linrows, [ i ] );
+        i := i + 1;
+    od;
+    conlin := ZeroMutable( [ 1 .. 2 ^ ncinstance[3] - 1 ] );
+    if ncinstance[2]>1 then
+		for j  in [ 1 .. ncinstance[2] ]  do    #### H(s1,s2,..,sj)=H(s1)+H(s2)+,...,+H(sj)
+			conlin[set2int( [ j ] )] := 1;
+		od;
+		conlin[set2int( [ 1 .. ncinstance[2] ] )] := -1;
+		Append( ShOB[1], [ conlin ] );
+		Append( ShOB[2], [ 0 ] );
+		Append( linrows, [ i ] );
+		i := i + 1;
+    fi;
+    for j in [1..ncinstance[3]] do
+		conlin := ZeroMutable( [ 1 .. 2 ^ ncinstance[3] - 1 ] );
+		conlin[set2int( [ j ] )] := -1;
+		Append( ShOB[1], [ conlin ] );
+		Append( ShOB[2], [ 0 ] );
+    od;
+    conlin := ZeroMutable( [ 1 .. 2 ^ ncinstance[3] - 1 ] );
+    for j  in [ 1 .. ncinstance[3] ]  do    #### sum<=1
+        conlin[set2int( [ j ] )] := 1;
+    od;
+    Append( ShOB[1], [ conlin ] );
+	Append( ShOB[2], [ 1 ] );
+    return [ ShOB[1], ShOB[2], linrows ];
+end;
+
+RemoveZeroColumn:=function(A)
+	local AT,i,zeroind,indi,ATT;
+	AT:=TransposedMat(A);
+	zeroind:=[];
+	for i in [1..Size(AT)] do
+		if Maximum(AT[i])=0 and Minimum(AT[i])=0 then
+			Append(zeroind,[i]);
+		fi;
+	od;
+    indi:=Difference([1..Size(AT)],zeroind);
+    ATT:=AT{indi};
+    return TransposedMat(ATT);
+end;
+
+####function that add zero
+AddZero:=function(H,position)
+	local HH,i;
+	HH:=ShallowCopy(H);
+	for i in [1..Size(HH)] do
+		Add(HH[i],0,position);
+	od;
+	return HH;
+end;
+####function that combine H and Equal
+CombineHandEqual:=function(H,Equal,ncinstance3)
+	local HH,EqualRemove,REqual,i,REqualT,REqualTR,REqualR,REqualfinal,REqualfinalSort,a;
+	EqualRemove:=MatrixRemoveColumn(Equal,Size(Equal[1]));
+	REqual:=RREF(EqualRemove);
+	REqualT:=TransposedMat(REqual);
+	REqualTR:=RemoveZeroColumn(REqualT);
+	REqualR:=TransposedMat(REqualTR);
+	REqualfinal:=[];
+	for i in [1..Size(REqualR)] do
+		if PositionNthOccurrence(REqualR[i],1,1)>Size(REqualR[i])-ncinstance3 then
+			Append(REqualfinal,[REqualR[i]]);
+		fi;
+	od;
+	REqualfinalSort:=Reversed(SortColumnDescent(REqualfinal));
+	HH:=ShallowCopy(H);
+	for i in [1..Size(REqualfinalSort)] do
+		HH:=AddZero(HH,PositionNthOccurrence(REqualfinalSort[i],1,1));
+	od;
+	a:=[1..ncinstance3+1];
+	for i in [1..Size(REqualfinalSort)] do
+		Append(HH,[REqualfinalSort[i]{a}]);
+		Append(HH,[-REqualfinalSort[i]{a}]);
+	od;
+	return HH;
+end;
+
+CombineVandEqual:=function(V,Equal,ncinstance3)
+	local EqualRemove,REqual,i,REqualT,REqualTR,REqualR,REqualfinal,REqualfinalSort,VV,a
+	,posi,REqualfinalSortShort,j;
+	EqualRemove:=MatrixRemoveColumn(Equal,Size(Equal[1]));
+	REqual:=RREF(EqualRemove);
+	REqualT:=TransposedMat(REqual);
+	REqualTR:=RemoveZeroColumn(REqualT);
+	REqualR:=TransposedMat(REqualTR);
+	REqualfinal:=[];
+	for i in [1..Size(REqualR)] do
+		if PositionNthOccurrence(REqualR[i],1,1)>Size(REqualR[i])-ncinstance3 then
+			Append(REqualfinal,[REqualR[i]]);
+		fi;
+	od;
+	REqualfinalSort:=Reversed(SortColumnDescent(REqualfinal));
+	VV:=ShallowCopy(V);
+	for i in [1..Size(REqualfinalSort)] do
+		VV:=AddZero(VV,PositionNthOccurrence(REqualfinalSort[i],1,1));
+	od;
+	a:=[1..ncinstance3];
+	for i in [1..Size(REqualfinalSort)] do
+		REqualfinalSortShort:=REqualfinalSort[i]{a};
+		posi:=PositionNthOccurrence(REqualfinalSort[i],1,1);
+		REqualfinalSortShort[posi]:=0;
+		for j in [1..Size(VV)] do
+			VV[j][posi]:=VV[j]*-REqualfinalSortShort;
+		od;
+	od;
+	return VV;
+end;
+
+###project marginal entropy with Equality Elemination embbeded for Cnet or CCnet
+NCRateRegionOBForrMarginalEntropy:=function ( ncinstance, usesym, optargs )
+    local  rlist, A, b, linrows,Rlinrows,i, listofedge,Equal, G, rlist1, ineq, ineqorb, row, rrA, rrb, 
+    onemap, nslist, idx, nsrec, los, lolos, Oi, O, trans_ineq,conineq,A1,b1,AT,indi,AB;
+    rlist := NCShannonBoundedForrMarginalEntropy( ncinstance );
+    A := rlist[1];
+    b := rlist[2];
+    linrows := rlist[3];
+    Equal:=A{linrows};
+    Rlinrows:=Reversed(linrows);
+    for i in [1..Size(Rlinrows)] do
+		Remove(A,Rlinrows[i]);
+		Remove(b,Rlinrows[i]);
+    od;
+    if usesym = false  then
+        G := Group( [ () ] );
+    else
+        G := NetSymGroup( ncinstance );
+    fi;
+    if Size( optargs ) > 0  then
+        nslist := [  ];
+        nsrec := optargs[1];
+        for idx  in RecNamesInt( nsrec )  do
+            lolos := nsrec.(idx);
+            for los  in lolos  do
+                if idx = 1  then
+                    ineq := ZYNonShannon( los, ncinstance[3] );
+                    ineqorb := Orbit( G, ineq, OnEntropySpace );
+                    Append( nslist, ineqorb );
+                else
+                    ineq := DFZNonShannon( idx - 1, los, ncinstance[3] );
+                    ineqorb := Orbit( G, ineq, OnEntropySpace );
+                    Append( nslist, ineqorb );
+                fi;
+            od;
+        od;
+        Append( A, nslist );
+        Append( b, ZeroMutable( [ 1 .. Size( nslist ) ] ) );
+    fi;
+    #### full-dimension
+    listofedge:=[1..ncinstance[3]];
+    AB:=EqualityEliminationMain(Equal,A,b,listofedge,qs_exec,Anet);
+    A1:=AB[1];
+    b1:=AB[2];
+    A1:=SortColumnDescent(A1);
+    AT:=TransposedMat(A1);
+    indi:=0;
+    for i in [2..ncinstance[3]] do
+		if Maximum(AT[i])=0 and Minimum(AT[i])=0 then
+			indi:=indi+1;
+		fi;
+    od;
+    if Anet=true then
+		indi:=indi-1;
+    fi;
+    A1:=RemoveZeroColumn(A1);
+    ###### end of full-dimension
+    rlist1 := symCHM( A1, b1, [], ncinstance[3]-indi, G, OnProjPts, OnProjIneq, false );
+       if rlist1[3][2]=[] then
+		   rlist1[3][2]:=0;
+       fi;
+    Display( Concatenation( "stats:  No. of LPs solved = ", 
+       String( rlist1[3][1] ), ", \n\t No. of facets = ", 
+       String( Size( rlist1[2] ) ), 
+       ", \n\tDD stepsizes beyond initial hull = ", String( rlist1[3][2] ) ) 
+     );
+     ####
+    rlist1[2]:=CombineHandEqual(rlist1[2],AB[3],ncinstance[3]);
+    rlist1[1]:=CombineVandEqual(rlist1[1],AB[3],ncinstance[3]);
+    #####
+    rrA := [  ];
+    rrb := [  ];
+    for row  in rlist1[2]  do
+        if row[Size(row)]=0  then
+            Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+            Append( rrb, [ row[Size( row )] ] );
+        fi;
+    od;
+    trans_ineq := [  ];
+    Oi := OrbitsDomain( G, rrA, OnProjIneq );
+    for O  in Oi  do
+        Append( trans_ineq, [ O[1] ] );
+    od;
+    return [ trans_ineq, RRparse( ncinstance, trans_ineq ) ];
+end;
+
+
+ConcatenateOB:=function(OB1,OB2)
+  local OB,i,len1,len2,ob1,ob2,Ob;
+  len1:=Size(OB1[1]);
+  len2:=Size(OB2[1]);
+  ob1:=ZeroMutable([1..len1]);
+  ob2:=ZeroMutable([1..len2]);
+  OB:=[];
+  for i in [1..Size(OB1)] do
+    Ob:=ShallowCopy(OB1[i]);
+    Ob:=Concatenation(Ob,ob2);
+    Append(OB,[Ob]);
+  od;
+  for i in [1..Size(OB2)] do
+    Ob:=ShallowCopy(OB2[i]);
+    Ob:=Concatenation(ob1,Ob);
+    Append(OB,[Ob]);
+  od;
+  return OB;
+end;
+
+##subfunction  sortpapallel for matrix
+MySortParallel:=function(OB,list)
+local list1,i,OB1,ob;
+OB1:=[];
+for i in [1..Size(OB)] do
+        ob:=ShallowCopy(OB[i]);
+	list1:=ShallowCopy(list);
+	SortParallel(list1,ob);
+	Append(OB1,[ob]);
+od;
+return OB1;
+end;
+
+####Project the concatenated region of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
+ProjectJAnetOBJCnetOB:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
+local JAnetOB,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
+JAnetOB:=[];
+ for row  in JJAnetOB  do
+        if row[Size(row)]=0  then
+            Append( JAnetOB, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+        fi;
+    od;
+JCnetOB:=[];
+ for row  in JJCnetOB  do
+        if row[Size(row)]=0  then
+            Append( JCnetOB, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+        fi;
+    od;
+Alen:=Size(JAnetOB[1]);
+Clen:=Size(JCnetOB[1]);
+list:=[1..Alen+Clen];
+list1:=ShallowCopy(list);
+if projoutVariables=8 then
+	for i in [1..Clen-5] do
+		list1[i+Alen-3]:=list[Size(list)-Clen+5+i];
+		list1[Size(list)-Clen+5+i]:=list[i+Alen-3];
+	od;
+elif projoutVariables=6 then
+	for i in [1..Clen-3] do
+		list1[i+Alen-3]:=list[Size(list)-Clen+3+i];
+		list1[Size(list)-Clen+3+i]:=list[i+Alen-3];
+	od;
+else 
+	Print("Error!!! projoutVariables shoule be either 6 or 8");
+	return;
+fi;
+OB:=ConcatenateOB(JAnetOB,JCnetOB);
+b:=ZeroMutable([1..Size(OB)]);
+G := Group( [ () ] );
+linrows:=[];
+
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen-2]:=1;
+c[Alen+3]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen-1]:=1;
+c[Alen+1]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen]:=1;
+c[Alen+2]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+
+OB:=MySortParallel(OB,list1);
+c:=ZeroMutable( [1..Alen+Clen]);
+for i in [1..Alen+Clen-projoutVariables] do
+	c[i]:=1;
+od;
+Append(OB,[c]);
+Append(b,[1]);
+for i in [1..Alen+Clen-projoutVariables] do
+	c:=ZeroMutable( [1..Alen+Clen]);
+	c[i]:=-1;
+	Append(OB,[c]);
+	Append(b,[0]);
+od;
+ rlist1 := symCHM( OB, b, linrows, Alen+Clen-projoutVariables, G, OnProjPts, OnProjIneq, 
+       false );
+    rrA := [  ];
+    rrb := [  ];
+    for row  in rlist1[2]  do
+        if row[Size(row)]=0  then
+            Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+            Append( rrb, [ row[Size( row )] ] );
+        fi;
+    od;
+    trans_ineq := [  ];
+    Oi := OrbitsDomain( G, rrA, OnProjIneq );
+    for O  in Oi  do
+        Append( trans_ineq, [ O[1] ] );
+    od;
+    return [ trans_ineq, RRparse( JCCnet, trans_ineq ) ];
+end;
+
+###project marginal entropy of Anet without Equality Elemination embbeded
+MarginalEntropyForAnet:=function(ncinstance)
+local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,Oi,Anet;
+	rlist := NCShannonBoundedForrMarginalEntropy( ncinstance );
+	A := rlist[1];
+	b := rlist[2];
+	linrows := rlist[3];
+	A:=matrixpermForCnet(A,[1..ncinstance[3]]);
+	aa:=ZeroMutable([1..Size(A)]);
+	for i in [1..3] do 
+		A:=MatrixAddColumn(A,aa);  
+	od;
+	E6:=ncinstance[3];
+	E5:=ncinstance[3]-1;
+	Vcommon:=ZeroMutable([1..Size(A[1]+3)]); 
+	V5:=ZeroMutable([1..Size(A[1]+3)]);
+	V6:=ZeroMutable([1..Size(A[1]+3)]);
+	Vcommon[set2int([E5,E6])]:=1;
+	Vcommon[E5]:=-1;
+	Vcommon[E6]:=-1;
+	Vcommon[Size(Vcommon)]:=1;
+	V5[E5]:=-1;
+	V5[Size(V5)]:=1;
+	V5[Size(V5)-1]:=1;
+	V6[E6]:=-1;
+	V6[Size(V6)]:=1;
+	V6[Size(V6)-2]:=1;
+	A:=ShallowCopy(A);
+	b:=ShallowCopy(b);
+	linrows:=ShallowCopy(linrows);
+	Append(A,[Vcommon]);
+	Append(b,[0]);
+	Append(linrows,[Size(b)]);
+	Append(A,[V5]);
+	Append(b,[0]);
+	Append(linrows,[Size(b)]);
+	Append(A,[V6]);
+	Append(b,[0]);
+	Append(linrows,[Size(b)]);
+	A:=matrixperm(A,5,Size(Vcommon));
+	A:=matrixperm(A,6,Size(Vcommon)-1);
+	A:=matrixperm(A,7,Size(Vcommon)-2);
+	G := Group( [ () ] );
+	rlist1 := symCHM( A, b, linrows, ncinstance[3]+1, G, OnProjPts, OnProjIneq, false );
+    rrA := [  ];
+    rrb := [  ];
+    for row  in rlist1[2]  do
+        if row[Size(row)]=0  then
+            Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+            Append( rrb, [ row[Size( row )] ] );
+        fi;
+    od;
+    trans_ineq := [  ];
+    Oi := OrbitsDomain( G, rrA, OnProjIneq );
+    for O  in Oi  do
+        Append( trans_ineq, [ O[1] ] );
+    od;
+    Anet:=ShallowCopy(ncinstance);
+    Anet[3]:=Anet[3]+1;
+    return [ trans_ineq, RRparse(Anet, trans_ineq ) ];
+ end;
