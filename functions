@@ -696,6 +696,18 @@ od;
     return [ trans_ineq, RRparse( JCCnet, trans_ineq ) ];
 end;
 
+matrixpermForCnet:=function(A,listofedges)
+local i,c1,c2,Aprime;
+Aprime:=ShallowCopy(A);
+for i in [1..Size(listofedges)] do
+	c1:=i;
+	c2:=set2int([listofedges[i]]);
+	if not c1=c2 then
+		Aprime:=matrixperm(Aprime,c1,c2);
+	fi;
+od;
+return Aprime;
+end;
 ###project marginal entropy of Anet without Equality Elemination embbeded
 MarginalEntropyForAnet:=function(ncinstance)
 local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,Oi,Anet;
@@ -735,9 +747,9 @@ local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,O
 	Append(A,[V6]);
 	Append(b,[0]);
 	Append(linrows,[Size(b)]);
-	A:=matrixperm(A,5,Size(Vcommon));
-	A:=matrixperm(A,6,Size(Vcommon)-1);
-	A:=matrixperm(A,7,Size(Vcommon)-2);
+	A:=matrixperm(A,ncinstance[3]-1,Size(Vcommon));
+	A:=matrixperm(A,ncinstance[3],Size(Vcommon)-1);
+	A:=matrixperm(A,ncinstance[3]+1,Size(Vcommon)-2);
 	G := Group( [ () ] );
 	rlist1 := symCHM( A, b, linrows, ncinstance[3]+1, G, OnProjPts, OnProjIneq, false );
     rrA := [  ];
