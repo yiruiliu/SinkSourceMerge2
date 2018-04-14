@@ -618,8 +618,8 @@ NCRateRegionOBForrMarginalEntropyNoEE:=function ( ncinstance, usesym, optargs )
     return [ trans_ineq, RRparse( ncinstance, trans_ineq ) ];
 end;
 
-####Project the concatenated region of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
-ProjectJAnetOBJCnetOB:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
+####Project the concatenated region ([A|b])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
+ProjectJAnetOBJCnetOBAb:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
 local JAnetOB,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
 JAnetOB:=[];
  for row  in JJAnetOB  do
@@ -633,6 +633,84 @@ JCnetOB:=[];
             Append( JCnetOB, [ row{[ 1 .. Size( row ) - 1 ]} ] );
         fi;
     od;
+Alen:=Size(JAnetOB[1]);
+Clen:=Size(JCnetOB[1]);
+list:=[1..Alen+Clen];
+list1:=ShallowCopy(list);
+if projoutVariables=8 then
+	for i in [1..Clen-5] do
+		list1[i+Alen-3]:=list[Size(list)-Clen+5+i];
+		list1[Size(list)-Clen+5+i]:=list[i+Alen-3];
+	od;
+elif projoutVariables=6 then
+	for i in [1..Clen-3] do
+		list1[i+Alen-3]:=list[Size(list)-Clen+3+i];
+		list1[Size(list)-Clen+3+i]:=list[i+Alen-3];
+	od;
+else 
+	Print("Error!!! projoutVariables shoule be either 6 or 8");
+	return;
+fi;
+OB:=ConcatenateOB(JAnetOB,JCnetOB);
+b:=ZeroMutable([1..Size(OB)]);
+G := Group( [ () ] );
+linrows:=[];
+
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen-2]:=1;
+c[Alen+3]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen-1]:=1;
+c[Alen+1]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen]:=1;
+c[Alen+2]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+
+OB:=MySortParallel(OB,list1);
+c:=ZeroMutable( [1..Alen+Clen]);
+for i in [1..Alen+Clen-projoutVariables] do
+	c[i]:=1;
+od;
+Append(OB,[c]);
+Append(b,[1]);
+for i in [1..Alen+Clen-projoutVariables] do
+	c:=ZeroMutable( [1..Alen+Clen]);
+	c[i]:=-1;
+	Append(OB,[c]);
+	Append(b,[0]);
+od;
+ rlist1 := symCHM( OB, b, linrows, Alen+Clen-projoutVariables, G, OnProjPts, OnProjIneq, 
+       false );
+    rrA := [  ];
+    rrb := [  ];
+    for row  in rlist1[2]  do
+        if row[Size(row)]=0  then
+            Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+            Append( rrb, [ row[Size( row )] ] );
+        fi;
+    od;
+    trans_ineq := [  ];
+    Oi := OrbitsDomain( G, rrA, OnProjIneq );
+    for O  in Oi  do
+        Append( trans_ineq, [ O[1] ] );
+    od;
+    return [ trans_ineq, RRparse( JCCnet, trans_ineq ) ];
+end;
+
+####Project the concatenated region ([A])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
+ProjectJAnetOBJCnetOB:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
+local JAnetOB,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
+JAnetOB:=JJAnetOB[1];
+JCnetOB:=JJCnetOB[1];
 Alen:=Size(JAnetOB[1]);
 Clen:=Size(JCnetOB[1]);
 list:=[1..Alen+Clen];
