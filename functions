@@ -963,7 +963,7 @@ Net2CommonInforNetAdd3MoreVariable:=function(net,sourcee1,sourcee2)
 			Append(W,[n4]);
 		fi;
 	od;
-	return [Q,W];
+	return [Q,Union(W,[])];
 end;
 
 ####Add 1 more variable
