@@ -892,7 +892,8 @@ AddRateVariable2:=function(net,sink1,sink2)
 	return [Q,W];
 end;
 
-Net2CommonInforNetgeneral:=function(net,sourcee1,sourcee2)
+####Add 3 more variables
+Net2CommonInforNetAdd3MoreVariable:=function(net,sourcee1,sourcee2)
 	local source1,source2,nSources,nEdges,Q,W,n1,n2,n3,n33,n4,n44,n5,i,j;
 	source1:=Minimum(sourcee1,sourcee2);
 	source2:=Maximum(sourcee1,sourcee2);
@@ -963,6 +964,71 @@ Net2CommonInforNetgeneral:=function(net,sourcee1,sourcee2)
 		fi;
 	od;
 	return [Q,W];
+end;
+
+####Add 1 more variable
+Net2CommonInforNetAdd1MoreVariable:=function(net,sourcee1,sourcee2)
+	local source1,source2,nSources,nEdges,Q,W,n1,n2,n3,n33,n4,n44,n5,i,j;
+	source1:=Minimum(sourcee1,sourcee2);
+	source2:=Maximum(sourcee1,sourcee2);
+	nSources:=net[1][1][1]-1;
+	nEdges:=Size(net[1]);
+	if Minimum(source1, source2)<1 then
+		Print("Error!!! Input source1 and source2 should be greater than or equal to 0");
+		return;
+	fi;
+	if Maximum(source1,source2)>nSources then
+		Print("Error!!! Input source1 and source2 should be less than or equal to # of sources");
+		return;
+	fi;
+	if source1=source2 then
+		Print("Error!!! source1 source2 should be different");
+		return;
+	fi;
+	if nSources=1 then
+		Print("Error!!! Input net should have at least 2 sources");
+		return;
+	fi;
+	Q:=[];
+	for i in [1..Size(net[1])] do
+		n3:=ShallowCopy(net[1][i]);
+		n3[1]:=n3[1]+1;
+		n33:=ShallowCopy(n3[2]);
+		for j in [1..Size(n33)] do
+			if n33[j]>nSources then
+				n33[j]:=n33[j]+1;
+			fi;
+		od;
+		if source1 in n33 or source2 in n33 then
+			Append(n33,[nSources+1]);
+		fi;
+		Sort(n33);
+		n3[2]:=n33;
+		Append(Q,[n3]);
+	od;
+	W:=[];
+	for i in [1..Size(net[2])] do
+		n4:=ShallowCopy(net[2][i]);
+		n44:=ShallowCopy(n4[2]);
+		for j in [1..Size(n44)] do
+			if  n44[j]>nSources then
+				n44[j]:=n44[j]+1;
+			fi;
+		od;
+		if source1 in n44 or source2 in n44 then
+			Append(n44,[nSources+1]);
+		fi;
+		Sort(n44);
+		n4[2]:=n44;
+		if n4[1]=source1 or n4[1]=source2 then
+			n5:=ShallowCopy(n4);
+			n5[1]:=nSources+1;
+			Append(W,[n4,n5]);
+		else
+			Append(W,[n4]);
+		fi;
+	od;
+	return [Q,Union(W,[])];
 end;
 
 ####sink source merge with 8 variables
