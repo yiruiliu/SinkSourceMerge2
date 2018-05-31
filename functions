@@ -619,7 +619,7 @@ NCRateRegionOBForrMarginalEntropyNoEE:=function ( ncinstance, usesym, optargs )
 end;
 
 ####Project the concatenated region ([A|b])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
-ProjectJAnetOBJCnetOBAb:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
+ProjectJAnetOBJCnetOBAb3variables:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
 local JAnetOB,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
 JAnetOB:=[];
  for row  in JJAnetOB  do
@@ -707,7 +707,7 @@ od;
 end;
 
 ####Project the concatenated region ([A])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
-ProjectJAnetOBJCnetOB:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
+ProjectJAnetOBJCnetOB3variables:=function(JJAnetOB,JJCnetOB,projoutVariables,JCCnet)
 local JAnetOB,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
 JAnetOB:=JJAnetOB[1];
 JCnetOB:=JJCnetOB[1];
@@ -784,6 +784,73 @@ od;
     return [ trans_ineq, RRparse( JCCnet, trans_ineq ) ];
 end;
 
+####Project the concatenated region ([A])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
+ProjectJAnetOBJCnetOB1variables:=function(JJAnetOB,JJCnetOB,Cnet,JCCnet)
+local SourceNeedtoMerge,JAnetOB,zcolumn,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
+SourceNeedtoMerge:=Cnet[3];
+JAnetOB:=JJAnetOB[1];
+JCnetOB:=JJCnetOB[1];
+Alen:=Size(JAnetOB[1]);
+Clen:=Size(JCnetOB[1]);
+list:=[1..Alen+Clen];
+list1:=ShallowCopy(list);
+OB:=ConcatenateOB(JAnetOB,JCnetOB);
+zcolum:=ZeroMutable([1..Size(TransposedMat(OB))]);
+OB:=MatrixAddColumn(OB,zcolum);
+OB:=MatrixAddColumn(OB,zcolum);
+b:=ZeroMutable([1..Size(OB)]);
+G := Group( [ () ] );
+linrows:=[];
+c:=ZeroMutable( [1..Alen+Clen+2]);
+c[Alen-2]:=1;
+c[Alen+3]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen-1]:=1;
+c[Alen+1]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen]);
+c[Alen]:=1;
+c[Alen+2]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+
+OB:=MySortParallel(OB,list1);
+c:=ZeroMutable( [1..Alen+Clen]);
+for i in [1..Alen+Clen-projoutVariables] do
+	c[i]:=1;
+od;
+Append(OB,[c]);
+Append(b,[1]);
+for i in [1..Alen+Clen-projoutVariables] do
+	c:=ZeroMutable( [1..Alen+Clen]);
+	c[i]:=-1;
+	Append(OB,[c]);
+	Append(b,[0]);
+od;
+ rlist1 := symCHM( OB, b, linrows, Alen+Clen-projoutVariables, G, OnProjPts, OnProjIneq, 
+       false );
+    rrA := [  ];
+    rrb := [  ];
+    for row  in rlist1[2]  do
+        if row[Size(row)]=0  then
+            Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+            Append( rrb, [ row[Size( row )] ] );
+        fi;
+    od;
+    trans_ineq := [  ];
+    Oi := OrbitsDomain( G, rrA, OnProjIneq );
+    for O  in Oi  do
+        Append( trans_ineq, [ O[1] ] );
+    od;
+    return [ trans_ineq, RRparse( JCCnet, trans_ineq ) ];
+end;
+
 matrixpermForCnet:=function(A,listofedges)
 local i,c1,c2,Aprime;
 Aprime:=ShallowCopy(A);
@@ -796,7 +863,8 @@ for i in [1..Size(listofedges)] do
 od;
 return Aprime;
 end;
-###project marginal entropy of Anet without Equality Elemination embbeded
+
+###project marginal entropy of Anet without Equality Elemination embbeded(Ua',Ub',Uab')=(vcommon,v5,v6)
 MarginalEntropyForAnet:=function(ncinstance)
 local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,Oi,Anet;
 	rlist := NCShannonBoundedForrMarginalEntropy( ncinstance );
@@ -810,9 +878,9 @@ local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,O
 	od;
 	E6:=ncinstance[3];
 	E5:=ncinstance[3]-1;
-	Vcommon:=ZeroMutable([1..Size(A[1]+3)]); 
-	V5:=ZeroMutable([1..Size(A[1]+3)]);
-	V6:=ZeroMutable([1..Size(A[1]+3)]);
+	Vcommon:=ZeroMutable([1..Size(A[1])]); 
+	V5:=ZeroMutable([1..Size(A[1])]);
+	V6:=ZeroMutable([1..Size(A[1])]);
 	Vcommon[set2int([E5,E6])]:=1;
 	Vcommon[E5]:=-1;
 	Vcommon[E6]:=-1;
@@ -1028,7 +1096,7 @@ Net2CommonInforNetAdd1MoreVariable:=function(net,sourcee1,sourcee2)
 			Append(W,[n4]);
 		fi;
 	od;
-	return [Q,Union(W,[])];
+	return [Q,Union(W,[]),[sourcee1,sourcee2,nSources+1]];
 end;
 
 ####sink source merge with 8 variables
