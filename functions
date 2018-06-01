@@ -965,8 +965,9 @@ numOfSinks:=function(net)
 end;
 
 ############Common information decomposition on sinks
+####Used for ITCP
 AddRateVariable2:=function(net,sink1,sink2)
-	local Sinks,newedge1,newedge2,newedge3,newedge4, nEdges, nSources, Q, W;
+	local Sinks,newedge1,newedge2, nEdges, nSources, Q, W;
 	if Maximum(sink1,sink2)>Size(net[2]) or Minimum(sink1,sink2)<0 then
 		Print("Error! Please input the right index of sink nodes.");
 		return;
@@ -974,14 +975,40 @@ AddRateVariable2:=function(net,sink1,sink2)
 	Sinks:=numOfSinks(net);
 	nEdges:=Size(net[1]);
 	nSources:=net[1][1][1]-1;
-	newedge3:=[nEdges+nSources+1];
-	newedge4:=[nEdges+nSources+2];
-	Append(newedge3,[Sinks[sink1]]);
-	Append(newedge4,[Sinks[sink2]]);
+	newedge1:=[nEdges+nSources+1];
+	newedge2:=[nEdges+nSources+2];
+	Append(newedge1,[Sinks[sink1]]);
+	Append(newedge2,[Sinks[sink2]]);
 	Q:=ShallowCopy(net[1]);
 	W:=ShallowCopy(net[2]);
-	Append(Q,[newedge3]);
-	Append(Q,[newedge4]);
+	Append(Q,[newedge1]);
+	Append(Q,[newedge2]);
+	return [Q,W];
+end;
+####Used for ITAP
+AddRateVariable3:=function(net,sink1,sink2)
+	local Sinks,newedge1,newedge2,newedge3_1,newedge3_2, nEdges, nSources, Q, W;
+	if Maximum(sink1,sink2)>Size(net[2]) or Minimum(sink1,sink2)<0 then
+		Print("Error! Please input the right index of sink nodes.");
+		return;
+	fi;
+	Sinks:=numOfSinks(net);
+	nEdges:=Size(net[1]);
+	nSources:=net[1][1][1]-1;
+	newedge1:=[nEdges+nSources+1];
+	newedge2:=[nEdges+nSources+2];
+	newedge3_1:=[nEdges+nSources+3];
+	newedge3_2:=[nEdges+nSources+3];
+	Append(newedge1,[Sinks[sink1]]);
+	Append(newedge2,[Sinks[sink2]]);
+	Append(newedge3_1,[Sinks[sink1]]);
+	Append(newedge3_2,[Sinks[sink2]]);
+	Q:=ShallowCopy(net[1]);
+	W:=ShallowCopy(net[2]);
+	Append(Q,[newedge1]);
+	Append(Q,[newedge2]);
+	Append(Q,[newedge3_1]);
+	Append(Q,[newedge3_2]);
 	return [Q,W];
 end;
 
