@@ -785,7 +785,7 @@ od;
 end;
 
 ####Project the concatenated region ([A])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )"
-####(Ua',Ub',Uab')=(vcommon,v5,v6), v5=SourceNeedtoMerge[1], v6=SourceNeedtoMerge[2], vcommon=SourceNeedtoMerge[3] 
+####(Ua',Ub',Uab')=(v5,v6,vcommon), v5=SourceNeedtoMerge[1], v6=SourceNeedtoMerge[2], vcommon=SourceNeedtoMerge[3] 
 ProjectJAnetOBJCnetOB1variables:=function(JJAnetOB,JJCnetOB,Cnet,JCCnet)
 local SourceNeedtoMerge,JAnetOB,zcolumn,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
 SourceNeedtoMerge:=Cnet[3];
@@ -987,7 +987,7 @@ AddRateVariable2:=function(net,sink1,sink2)
 end;
 ####Used for ITAP
 AddRateVariable3:=function(net,sink1,sink2)
-	local Sinks,newedge1,newedge2,newedge3_1,newedge3_2, nEdges, nSources, Q, W;
+	local Sinks,newedge1,newedge2,newedge3,nEdges, nSources, Q, W,scombine;
 	if Maximum(sink1,sink2)>Size(net[2]) or Minimum(sink1,sink2)<0 then
 		Print("Error! Please input the right index of sink nodes.");
 		return;
@@ -997,18 +997,16 @@ AddRateVariable3:=function(net,sink1,sink2)
 	nSources:=net[1][1][1]-1;
 	newedge1:=[nEdges+nSources+1];
 	newedge2:=[nEdges+nSources+2];
-	newedge3_1:=[nEdges+nSources+3];
-	newedge3_2:=[nEdges+nSources+3];
+	newedge3:=[nEdges+nSources+3];
 	Append(newedge1,[Sinks[sink1]]);
 	Append(newedge2,[Sinks[sink2]]);
-	Append(newedge3_1,[Sinks[sink1]]);
-	Append(newedge3_2,[Sinks[sink2]]);
+	scombine:=Union(Sinks[sink1],Sinks[sink2]);
+	Append(newedge3,[scombine]);
 	Q:=ShallowCopy(net[1]);
 	W:=ShallowCopy(net[2]);
 	Append(Q,[newedge1]);
 	Append(Q,[newedge2]);
-	Append(Q,[newedge3_1]);
-	Append(Q,[newedge3_2]);
+	Append(Q,[newedge3]);
 	return [Q,W];
 end;
 
