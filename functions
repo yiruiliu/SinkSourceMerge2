@@ -804,9 +804,10 @@ for i in [Alen+4..Alen+Clen] do
 	list1[i-4]:=list[i];
 od;
 OB:=ConcatenateOB(JAnetOB,JCnetOB);
-zcolum:=ZeroMutable([1..Size(TransposedMat(OB))]);
+zcolum:=ZeroMutable([1..Size(OB)]);
 OB:=MatrixAddColumn(OB,zcolum);
 OB:=MatrixAddColumn(OB,zcolum);
+OB:=ShallowCopy(OB);
 b:=ZeroMutable([1..Size(OB)]);
 G := Group( [ () ] );
 linrows:=[];
