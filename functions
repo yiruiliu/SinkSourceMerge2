@@ -858,7 +858,7 @@ for i in [1..Alen+Clen-4] do
 	Append(OB,[c]);
 	Append(b,[0]);
 od;
- rlist1 := symCHM( OB, b, linrows, Alen+Clen-projoutVariables, G, OnProjPts, OnProjIneq, 
+ rlist1 := symCHM( OB, b, linrows, Alen+Clen-4, G, OnProjPts, OnProjIneq, 
        false );
     rrA := [  ];
     rrb := [  ];
