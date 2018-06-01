@@ -784,7 +784,8 @@ od;
     return [ trans_ineq, RRparse( JCCnet, trans_ineq ) ];
 end;
 
-####Project the concatenated region ([A])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )" 
+####Project the concatenated region ([A])of Anet and Cnet,JCCnet is used for "RRparse( JCCnet, trans_ineq )"
+####(Ua',Ub',Uab')=(vcommon,v5,v6), v5=SourceNeedtoMerge[1], v6=SourceNeedtoMerge[2], vcommon=SourceNeedtoMerge[3] 
 ProjectJAnetOBJCnetOB1variables:=function(JJAnetOB,JJCnetOB,Cnet,JCCnet)
 local SourceNeedtoMerge,JAnetOB,zcolumn,JCnetOB,Alen,Clen,list,list1,i,OB,b,linrows,rlist1,G,c,nc,rrA,rrb,row,trans_ineq,Oi,O;
 SourceNeedtoMerge:=Cnet[3];
@@ -792,8 +793,16 @@ JAnetOB:=JJAnetOB[1];
 JCnetOB:=JJCnetOB[1];
 Alen:=Size(JAnetOB[1]);
 Clen:=Size(JCnetOB[1]);
-list:=[1..Alen+Clen];
+list:=[1..Alen+Clen+2];
 list1:=ShallowCopy(list);
+list1[Alen-2]:=list[Alen+Clen+1];
+list1[Alen+Clen+1]:=list[Alen-2];
+list1[Alen-1]:=list[Alen+Clen+2];
+list1[Alen+Clen+2]:=list[Alen-1];
+for i in [Alen+4..Alen+Clen] do
+	list1[i]:=list[i-4];
+	list1[i-4]:=list[i];
+od;
 OB:=ConcatenateOB(JAnetOB,JCnetOB);
 zcolum:=ZeroMutable([1..Size(TransposedMat(OB))]);
 OB:=MatrixAddColumn(OB,zcolum);
@@ -803,32 +812,47 @@ G := Group( [ () ] );
 linrows:=[];
 c:=ZeroMutable( [1..Alen+Clen+2]);
 c[Alen-2]:=1;
-c[Alen+3]:=-1;
+c[Alen+SourceNeedtoMerge[3]]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
-c:=ZeroMutable( [1..Alen+Clen]);
+c:=ZeroMutable( [1..Alen+Clen+2]);
 c[Alen-1]:=1;
-c[Alen+1]:=-1;
+c[Alen+SourceNeedtoMerge[1]]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
-c:=ZeroMutable( [1..Alen+Clen]);
+c:=ZeroMutable( [1..Alen+Clen+2]);
 c[Alen]:=1;
-c[Alen+2]:=-1;
+c[Alen+SourceNeedtoMerge[2]]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
-
+#####H(Ue1)=H(Ua')+H(Uab'), H(Ue2)=H(Ub')+H(Uab')
+c:=ZeroMutable( [1..Alen+Clen+2]);
+c[Alen-2]:=1;
+c[Alen-1]:=1;
+c[Alen+Clen+1]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+c:=ZeroMutable( [1..Alen+Clen+2]);
+c[Alen-2]:=1;
+c[Alen]:=1;
+c[Alen+Clen+2]:=-1;
+Append(OB,[c]);
+Append(b,[0]);
+Append(linrows,[Size(b)]);
+#####
 OB:=MySortParallel(OB,list1);
-c:=ZeroMutable( [1..Alen+Clen]);
-for i in [1..Alen+Clen-projoutVariables] do
+c:=ZeroMutable( [1..Alen+Clen+2]);
+for i in [1..Alen+Clen-4] do
 	c[i]:=1;
 od;
 Append(OB,[c]);
 Append(b,[1]);
-for i in [1..Alen+Clen-projoutVariables] do
-	c:=ZeroMutable( [1..Alen+Clen]);
+for i in [1..Alen+Clen-4] do
+	c:=ZeroMutable( [1..Alen+Clen+2]);
 	c[i]:=-1;
 	Append(OB,[c]);
 	Append(b,[0]);
