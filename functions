@@ -1146,7 +1146,7 @@ Net2CommonInforNetAdd1MoreVariable:=function(net,sourcee1,sourcee2)
 			Append(W,[n4]);
 		fi;
 	od;
-	return [Q,Union(W,[]),[sourcee1,sourcee2,nSources+1]];
+	return [[Q,Union(W,[])],[sourcee1,sourcee2,nSources+1]];
 end;
 
 ####sink source merge with 8 variables
