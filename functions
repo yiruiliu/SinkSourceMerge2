@@ -812,33 +812,33 @@ b:=ZeroMutable([1..Size(OB)]);
 G := Group( [ () ] );
 linrows:=[];
 c:=ZeroMutable( [1..Alen+Clen+2]);
-c[Alen-2]:=1;
+c[Alen]:=1;
 c[Alen+SourceNeedtoMerge[3]]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
 c:=ZeroMutable( [1..Alen+Clen+2]);
-c[Alen-1]:=1;
+c[Alen-2]:=1;
 c[Alen+SourceNeedtoMerge[1]]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
 c:=ZeroMutable( [1..Alen+Clen+2]);
-c[Alen]:=1;
+c[Alen-1]:=1;
 c[Alen+SourceNeedtoMerge[2]]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
-#####H(Ue1)=H(Ua')+H(Uab'), H(Ue2)=H(Ub')+H(Uab')
+#####H(Ue1)=H(Ua')+H(Uab'), H(Ue2)=H(Ub')+H(Uab'),(Ua',Ub',Uab')=(v5,v6,vcommon)
 c:=ZeroMutable( [1..Alen+Clen+2]);
 c[Alen-2]:=1;
-c[Alen-1]:=1;
+c[Alen]:=1;
 c[Alen+Clen+1]:=-1;
 Append(OB,[c]);
 Append(b,[0]);
 Append(linrows,[Size(b)]);
 c:=ZeroMutable( [1..Alen+Clen+2]);
-c[Alen-2]:=1;
+c[Alen-1]:=1;
 c[Alen]:=1;
 c[Alen+Clen+2]:=-1;
 Append(OB,[c]);
@@ -889,7 +889,7 @@ od;
 return Aprime;
 end;
 
-###project marginal entropy of Anet without Equality Elemination embbeded(Ua',Ub',Uab')=(vcommon,v5,v6)
+###project marginal entropy of Anet without Equality Elemination embbeded(Ua',Ub',Uab')=(v5,v6,vcommon)
 MarginalEntropyForAnet:=function(ncinstance)
 local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,Oi,Anet;
 	rlist := NCShannonBoundedForrMarginalEntropy( ncinstance );
@@ -928,9 +928,9 @@ local rlist,A,b,linrows,i,aa,E6,E5,Vcommon,V5,V6,rlist1,G,rrA,rrb,trans_ineq,O,O
 	Append(A,[V6]);
 	Append(b,[0]);
 	Append(linrows,[Size(b)]);
-	A:=matrixperm(A,ncinstance[3]-1,Size(Vcommon));
-	A:=matrixperm(A,ncinstance[3],Size(Vcommon)-1);
-	A:=matrixperm(A,ncinstance[3]+1,Size(Vcommon)-2);
+	A:=matrixperm(A,ncinstance[3]-1,Size(Vcommon)-1);
+	A:=matrixperm(A,ncinstance[3],Size(Vcommon)-2);
+	A:=matrixperm(A,ncinstance[3]+1,Size(Vcommon));
 	G := Group( [ () ] );
 	rlist1 := symCHM( A, b, linrows, ncinstance[3]+1, G, OnProjPts, OnProjIneq, false );
     rrA := [  ];
