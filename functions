@@ -440,7 +440,7 @@ CombineVandEqual:=function(V,Equal,ncinstance3)
 end;
 
 ###project marginal entropy with Equality Elemination embbeded for Cnet or CCnet
-NCRateRegionOBForrMarginalEntropy:=function ( ncinstance, usesym, optargs )
+NCRateRegionOBForrMarginalEntropy:=function ( ncinstance, usesym, optargs,Anet )
     local  rlist, A, b, linrows,Rlinrows,i, listofedge,Equal, G, rlist1, ineq, ineqorb, row, rrA, rrb, 
     onemap, nslist, idx, nsrec, los, lolos, Oi, O, trans_ineq,conineq,A1,b1,AT,indi,AB;
     rlist := NCShannonBoundedForrMarginalEntropy( ncinstance );
