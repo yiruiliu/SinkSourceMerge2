@@ -1272,3 +1272,45 @@ for i in [1..Size(net2[2])] do
 od;
 return [AQ1,AW1];
 end;
+###################09/24/2018
+##exapmle net:=[ [ [ [ 1, 2 ], [ 1 .. 3 ] ], [ [ 2, 3 ], [ 2 .. 4 ] ], [ [ 3 ], [ 3, 5 ] ], [ [ 3, 4 ], [ 3, 4, 6 ] ] ], 2, 6 ]
+## set h1=h5,h2=h6 and project out h5 and h6.
+## OB_result: marginal entropy outer bound
+## equal_pairs:for example [[1,5],[2,6]].
+## Dim: final dimension after project out extra variables
+## Ori_net: original network (normal network)
+ProjectOutTailEdges:=function(OB_result,euqal_pairs,Dim,Ori_net)
+local OB,len,b,linrows,j,pair,c,G,rlist1,rrA,rrb,row,trans_ineq,Oi,O;
+OB:=ShallowCopy(OB_result[1]);
+len:=Size(OB[1]);
+b:=ZeroMutable([1..Size(OB)]);
+linrows:=[];
+j:=Size(b);
+for pair in equal_pairs do
+	c:=ZeroMutable([1..len]);
+	c[pair[1]]:=1;
+	c[pair[2]]:=-1;
+	Append(OB,[c]);
+	Append(b,[0]);
+	Append(linrows,[b]);
+	b:=b+1;
+ od;
+ G := Group( [ () ] );
+ rlist1 := symCHM( A, b, linrows, Dim, G, OnProjPts, OnProjIneq, false );
+ rrA := [  ];
+ rrb := [  ];
+ for row  in rlist1[2]  do
+	 if row[Size(row)]=0  then
+		 Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+		 Append( rrb, [ row[Size( row )] ] );
+	 fi;
+ od;
+ trans_ineq := [  ];
+ Oi := OrbitsDomain( G, rrA, OnProjIneq );
+ for O  in Oi  do
+	 Append( trans_ineq, [ O[1] ] );
+ od;
+ return [ trans_ineq, RRparse( Ori_net, trans_ineq ) ];
+ end;
+
+
