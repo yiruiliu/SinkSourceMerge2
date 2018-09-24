@@ -1279,7 +1279,7 @@ end;
 ## equal_pairs:for example [[1,5],[2,6]].
 ## Dim: final dimension after project out extra variables
 ## Ori_net: original network (normal network)
-ProjectOutTailEdges:=function(OB_result,euqal_pairs,Dim,Ori_net)
+ProjectOutTailEdges:=function(OB_result,equal_pairs,Dim,Ori_net)
 local OB,len,b,linrows,j,pair,c,G,rlist1,rrA,rrb,row,trans_ineq,Oi,O;
 OB:=ShallowCopy(OB_result[1]);
 len:=Size(OB[1]);
