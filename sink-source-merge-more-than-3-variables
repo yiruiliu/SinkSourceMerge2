@@ -1,54 +1,54 @@
 
 ###### The following code works when projecting from Shannon outer bound.
 Permute_marginalAndJoin:=function(ncinstance)
-local A,numofVar,i;
-numofVar:=ncinstance[3];
-A:=[set2int([numofVar])+2^numofVar..set2int([numofVar])+2^(numofVar+1)-2];
-for i in [1..numofVar] do
-	A[set2int([i])]:=set2int([i]);
-od;
-for i in [1..Size(ncinstance[1])] do
-	A[set2int(ncinstance[1][i])]:=set2int([numofVar])+set2int(ncinstance[1][i]);
-od;
-return A;
+	local A,numofVar,i;
+	numofVar:=ncinstance[3];
+	A:=[set2int([numofVar])+2^numofVar..set2int([numofVar])+2^(numofVar+1)-2];
+	for i in [1..numofVar] do
+		A[set2int([i])]:=set2int([i]);
+	od;
+	for i in [1..Size(ncinstance[1])] do
+		A[set2int(ncinstance[1][i])]:=set2int([numofVar])+set2int(ncinstance[1][i]);
+	od;
+	return A;
 end;
 
 AddconstraintsTopAndBottom:=function(ncinstancetop)
-local linrows,i,ShOB1,con,j,conlin;
-ShOB1 := GenShannonUnBounded( ncinstancetop[3] );
-i := Size( ShOB1[1] ) + 1;
-linrows := [  ];
-for con  in ncinstancetop[1]  do     #### H(Out(t),In(t))=H(In(t))
-	conlin := ZeroMutable( [ 1 .. 2 ^ ncinstancetop[3] - 1 ] );
-	conlin[set2int( con[1] )] := 1;
-	conlin[set2int( con[2] )] := -1;
-	Append( ShOB1[1], [ conlin ] );
-	Append( ShOB1[2], [ 0 ] );
-	Append( linrows, [ i ] );
-	i := i + 1;
-od;
-conlin := ZeroMutable( [ 1 .. 2 ^ ncinstancetop[3] - 1 ] );
-if ncinstancetop[2]>1 then
-	for j  in [ 1 .. ncinstancetop[2] ]  do    #### H(s1,s2,..,sj)=H(s1)+H(s2)+,...,+H(sj)
-		conlin[set2int( [ j ] )] := 1;
+	local linrows,i,ShOB1,con,j,conlin;
+	ShOB1 := GenShannonUnBounded( ncinstancetop[3] );
+	i := Size( ShOB1[1] ) + 1;
+	linrows := [  ];
+	for con  in ncinstancetop[1]  do     #### H(Out(t),In(t))=H(In(t))
+		conlin := ZeroMutable( [ 1 .. 2 ^ ncinstancetop[3] - 1 ] );
+		conlin[set2int( con[1] )] := 1;
+		conlin[set2int( con[2] )] := -1;
+		Append( ShOB1[1], [ conlin ] );
+		Append( ShOB1[2], [ 0 ] );
+		Append( linrows, [ i ] );
+		i := i + 1;
 	od;
-	conlin[set2int( [ 1 .. ncinstancetop[2] ] )] := -1;
-	Append( ShOB1[1], [ conlin ] );
-	Append( ShOB1[2], [ 0 ] );
-	Append( linrows, [ i ] );
-	i := i + 1;
-fi;
-return [ShOB1[1],ShOB1[2],linrows];
+	conlin := ZeroMutable( [ 1 .. 2 ^ ncinstancetop[3] - 1 ] );
+	if ncinstancetop[2]>1 then
+		for j  in [ 1 .. ncinstancetop[2] ]  do    #### H(s1,s2,..,sj)=H(s1)+H(s2)+,...,+H(sj)
+			conlin[set2int( [ j ] )] := 1;
+		od;
+		conlin[set2int( [ 1 .. ncinstancetop[2] ] )] := -1;
+		Append( ShOB1[1], [ conlin ] );
+		Append( ShOB1[2], [ 0 ] );
+		Append( linrows, [ i ] );
+		i := i + 1;
+	fi;
+	return [ShOB1[1],ShOB1[2],linrows];
 end;
 
 Permute_matrix_parallel:=function(B,A)
-local Bt,Bf,A1;
-Bt:=TransposedMat(B);
-Bt:=ShallowCopy(Bt);
-A1:=ShallowCopy(A);
-SortParallel(A1,Bt);
-Bf:=TransposedMat(Bt);
-return [Bf,A1];
+	local Bt,Bf,A1;
+	Bt:=TransposedMat(B);
+	Bt:=ShallowCopy(Bt);
+	A1:=ShallowCopy(A);
+	SortParallel(A1,Bt);
+	Bf:=TransposedMat(Bt);
+	return [Bf,A1];
 end;
 
 MatrixRemoveColumn:=function(A,index)  ##subfunction
@@ -69,37 +69,37 @@ MatrixGetColumn:=function(A,index)   ##subfunction
 end;
 
 AddcutProject:=function(rlisttop,rlistbottom,ncinstancecut,A1)
-local Rlist,b,A,i,linrows,numofMarginal,numofSour,con,conlin,G,rlist1;
-Rlist:=ShallowCopy(rlisttop[2]);
-Append(Rlist,rlistbottom[2]);
-b:=MatrixGetColumn(Rlist,Size(Rlist[1]));
-b:=ShallowCopy(b);
-A:=MatrixRemoveColumn(Rlist,Size(Rlist[1]));
-A:=ShallowCopy(A);
-i:=Size(b)+1;
-linrows:=[];
-numofMarginal:=ncinstancecut[3];
-numofSour:=ncinstancecut[2]; 
-for con in ncinstancecut[1] do  #### H(Out(t),In(t))=H(In(t))
-	conlin:=ZeroMutable([1..Size(A[1])]);
-	if Size(con[1])>1 then
-		conlin[Position(A1,set2int(con[1])+set2int([numofMarginal]))]:=1; 
-    else
-		conlin[Position(A1,set2int(con[1]))]:=1;
-	fi;
-	if Size(con[2])>1 then
-		conlin[Position(A1,set2int(con[2])+set2int([numofMarginal]))]:=-1; 
-    else
-		conlin[Position(A1,set2int(con[2]))]:=-1;
-	fi;
-	Append(A,[conlin]);
-	Append(b,[0]);
-	Append(linrows,[i]);
-	i:=i+1;
-od;
-G:=Group( [ () ] );
-rlist1 := symCHM( A, b, linrows, numofMarginal, G, OnProjPts, OnProjIneq, false );
-return rlist1;
+	local Rlist,b,A,i,linrows,numofMarginal,numofSour,con,conlin,G,rlist1;
+	Rlist:=ShallowCopy(rlisttop[2]);
+	Append(Rlist,rlistbottom[2]);
+	b:=MatrixGetColumn(Rlist,Size(Rlist[1]));
+	b:=ShallowCopy(b);
+	A:=MatrixRemoveColumn(Rlist,Size(Rlist[1]));
+	A:=ShallowCopy(A);
+	i:=Size(b)+1;
+	linrows:=[];
+	numofMarginal:=ncinstancecut[3];
+	numofSour:=ncinstancecut[2]; 
+	for con in ncinstancecut[1] do  #### H(Out(t),In(t))=H(In(t))
+		conlin:=ZeroMutable([1..Size(A[1])]);
+		if Size(con[1])>1 then
+			conlin[Position(A1,set2int(con[1])+set2int([numofMarginal]))]:=1; 
+	    else
+			conlin[Position(A1,set2int(con[1]))]:=1;
+		fi;
+		if Size(con[2])>1 then
+			conlin[Position(A1,set2int(con[2])+set2int([numofMarginal]))]:=-1; 
+	    else
+			conlin[Position(A1,set2int(con[2]))]:=-1;
+		fi;
+		Append(A,[conlin]);
+		Append(b,[0]);
+		Append(linrows,[i]);
+		i:=i+1;
+	od;
+	G:=Group( [ () ] );
+	rlist1 := symCHM( A, b, linrows, numofMarginal, G, OnProjPts, OnProjIneq, false );
+	return rlist1;
 end;
 
 ######## An example for main function
@@ -109,21 +109,21 @@ end;
 #### cutVar:=[[[5,6],[5,6,7],[6,7],[6,7,8]],2,8];
 #### ncinstance:=[[[[1,2],[1,2,3]],[[2,3],[2,3,4]],[[3],[3,5]],[[3,4],[3,4,6]],[[5,6],[5,6,7]],[[6,7],[6,7,8]],[[7],[1,7]],[[7,8],[2,7,8]]],2,8];
 TopBottomPastingMain:=function(ncinstancetop,cutVar,ncinstancecut,ncinstancebottom,numofCutandSingle)
-local SHLT,AA,A1,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
-SHLT:=AddconstraintsTopAndBottom(ncinstancetop);
-AA:=Permute_marginalAndJoin(cutVar);
-SHTA:=Permute_matrix_parallel(SHLT[1],AA);
-SHT_P:=SHTA[1];
-SbT:=SHLT[2];
-A1:=SHTA[2];
-linrowsT:=SHLT[3];
-rlistTop:=ProjectOntoUseful_Var(SHT_P,SbT,numofCutandSingle,linrowsT);
-SHLB:=AddconstraintsTopAndBottom(ncinstancebottom);
-SHBA:=Permute_matrix_parallel(SHLB[1],AA);
-SHB_P:=SHBA[1];
-SbB:=SHLB[2];
-linrowsB:=SHLB[3];
-rlistBottom:=ProjectOntoUseful_Var(SHB_P,SbB,numofCutandSingle,linrowsB);
-rlist1:=AddcutProject(rlistTop,rlistBottom,ncinstancecut,A1);
-return rlist1;
+	local SHLT,AA,A1,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
+	SHLT:=AddconstraintsTopAndBottom(ncinstancetop);
+	AA:=Permute_marginalAndJoin(cutVar);
+	SHTA:=Permute_matrix_parallel(SHLT[1],AA);
+	SHT_P:=SHTA[1];
+	SbT:=SHLT[2];
+	A1:=SHTA[2];
+	linrowsT:=SHLT[3];
+	rlistTop:=ProjectOntoUseful_Var(SHT_P,SbT,numofCutandSingle,linrowsT);
+	SHLB:=AddconstraintsTopAndBottom(ncinstancebottom);
+	SHBA:=Permute_matrix_parallel(SHLB[1],AA);
+	SHB_P:=SHBA[1];
+	SbB:=SHLB[2];
+	linrowsB:=SHLB[3];
+	rlistBottom:=ProjectOntoUseful_Var(SHB_P,SbB,numofCutandSingle,linrowsB);
+	rlist1:=AddcutProject(rlistTop,rlistBottom,ncinstancecut,A1);
+	return rlist1;
 end;
