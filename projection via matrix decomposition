@@ -1,0 +1,190 @@
+####subfunction for DD method
+returnfullrank:=function(M)
+  local vecsize,matsize,i,l,j,indicate;
+  vecsize:=Size(M[1]);
+  matsize:=Size(M);
+  i:=1;
+  l:=[M[1]];
+  j:=1;
+  indicate:=[];
+  while i<vecsize+1 do
+    if RankMat(l)=Size(l) then
+        Append(indicate,[j]);
+      i:=i+1;
+      j:=j+1;
+    else
+        Remove(l,Size(l));
+      j:=j+1;
+    fi;
+    if j<matsize and RankMat(l)<vecsize then
+      Append(l,[M[j]]);
+    fi;
+  od;
+  return [l,indicate];
+end;
+
+######ax>0 DDmethod transform H-representation to V-representation
+DDmethod:=function(H)
+  local d,l,A,i,R,RR,j1,h,product,J0,Jn,Jp,j2,j3,j31,ZJn,zjn,ZJp,zjp,j4,j41,j,Jprime,rjj;
+  A:=returnfullrank(H);
+  R:=Inverse(A[1]);
+  RR:=TransposedMat(R);
+  d:=Size(H[1]);
+  l:=[1..Size(H)];
+  for j1 in Difference(l,A[2]) do
+    h:=H[j1];
+    J0:=[];
+    Jn:=[];
+    Jp:=[];
+    for j2 in [1..Size(RR)] do
+      product:=h*RR[j2];
+      if product=0 then
+        Append(J0,[RR[j2]]);
+      elif product>0 then
+        Append(Jp,[RR[j2]]);
+      elif product<0 then
+        Append(Jn,[RR[j2]]);
+      fi;
+    od;
+    ZJn:=[];
+    for j3 in [1..Size(Jn)] do
+      zjn:=[];
+      for j31 in [1..Size(H)] do
+        if Jn[j3]*H[j31]=0 then
+          Append(zjn,[j31]);
+        fi;
+      od;
+      Append(ZJn,[zjn]);
+    od;
+    ZJp:=[];
+    for j4 in [1..Size(Jp)] do
+      zjp:=[];
+      for j41 in [1..Size(H)] do
+        if Jp[j4]*H[j41]=0 then
+          Append(zjp,[j41]);
+        fi;
+      od;
+      Append(ZJp,[zjp]);
+    od;
+    Jprime:=Union(Jp,J0);
+    for i in [1..Size(ZJn)] do
+      for j in [1..Size(ZJp)] do
+          if not Intersection(ZJn[i],ZJp[j])=[] then
+          if RankMat(H{Intersection(ZJn[i],ZJp[j])})=d-2 then
+            rjj:=H[j1]*Jp[j]*Jn[i]-H[j1]*Jn[i]*Jp[j];
+            Jprime:=Union(Jprime,[rjj]);
+          fi;
+        fi;
+      od;
+    od;
+    RR:=Jprime;
+  od;
+  if d=Size(H) then
+    return RR;
+  else 
+    return Jprime;
+  fi;
+end;
+
+CaptureJointEntropy:=function(Jncinstance)
+  local i,JEntropy,Jsource,Ssource;
+  JEntropy:=[];
+  for i in [1..Size(Jncinstance[1])] do
+    Append(JEntropy,[Jncinstance[1][i][1]]);
+    Append(JEntropy,[Jncinstance[1][i][2]]);
+  od;
+  Jsource:=[];
+  Jsource:=[1..Jncinstance[2]];
+  JEntropy:=Union(JEntropy,[Jsource]);
+  Ssource:=TransposedMat([[1..Jncinstance[3]]]);
+  JEntropy:=Difference(JEntropy,Ssource);
+  JEntropy:=[JEntropy,Jncinstance[2],Jncinstance[3]];
+  return JEntropy;
+end;
+
+CutRREFpivotColumn:=function(Amatrix)
+  local i,RemoveRow,RemoveColumn,posi,ARow,AColumnT,ARowT,AColumn;
+  RemoveRow:=[];
+  RemoveColumn:=[];
+  for i in [1..Size(Amatrix)] do
+  posi:=Position(Amatrix[i],1); #find position of pivots
+    if posi=fail then
+      Append(RemoveRow,[i]);
+    else
+      Append(RemoveColumn,[posi]);
+    fi;
+  od;
+  if Size(RemoveRow)>0 then
+    ARow:=Amatrix{Difference([1..Size(Amatrix)],RemoveRow)};
+  else
+    ARow:=ShallowCopy(Amatrix);
+  fi;
+  ARowT:=TransposedMat(ARow);
+  AColumnT:=ARowT{Difference([1..Size(ARowT)],RemoveColumn)};
+  AColumn:=TransposedMat(AColumnT);
+  return AColumn;
+end;
+
+##from Jnet to Bu>=0 (get B matrix from Jnet) #sub_main function
+# input a Jnet to get B matrix along with the permutation indi_P
+JnettoB:=function(Jnet) 
+  local JEntropy,indi,ShOB,Permuteindi,SH,Sb,SH_PP,SH_P,i,conlin,Amatrix,k,AT,ATR,ACut,Atop_cut,Abuttom_cut,indi_P;
+  JEntropy:=CaptureJointEntropy(Jnet);
+  indi:=Permute_marginalAndJoin(JEntropy);
+  ShOB:=GenShannonUnBounded(Jnet[3]); ## Shannon outer bound is Ax<=0
+  SH:=-ShallowCopy(ShOB[1]);   ###transform into A'x>=0
+  Sb:=-ShallowCopy(ShOB[2]);
+  SH_PP:=Permute_matrix_parallel(SH,indi);
+  SH_P:=SH_PP[1];
+  indi_P:=SH_PP[2];
+  Amatrix:=[];
+  k:=Size(JEntropy[1])+Jnet[3];  ## number of joint and marginal entropies need to be kept
+  for i in [1..k] do   ## number of joint and marginal entropies need to be kept
+    conlin:=ZeroMutable([1..Size(SH_P[1])]);
+    conlin[i]:=-1;
+    Append(Amatrix,[conlin]);
+  od;
+  Append(Amatrix,SH_P);
+  AT:=TransposedMat(Amatrix);
+  ATR:=RREF(AT);
+  ACut:=CutRREFpivotColumn(ATR);  ##cut off pivot columns in rref
+  Atop_cut:=ACut{[1..k]};
+  Abuttom_cut:=ACut{[k+1..Size(ACut)]};
+  return[Atop_cut,Abuttom_cut,indi_P];
+end;
+
+#From Atop_cut Abottom_cut indi_P to marginal entropy region
+BtoMarginal:=function(Atop_cut,Abottom_cut,indi_P,Jnet)
+  local NAtop_cut,NAbottom_cut,I,Vbottom,C,NC,conlin,j,b,SBL,G,rlist1,rrA,rrb,row,trans_ineq,Oi,O;
+  NAtop_cut:=-Atop_cut;
+  NAbottom_cut:=-Abottom_cut;
+  I:=IdentityMat(Size(NAbottom_cut[1]));
+  Append(I,NAbottom_cut);
+  Vbottom:=DDmethod(I);
+  C:=Vbottom*TransposedMat(NAtop_cut);   #Cx>=0   shannon outer bound projected onto useful variables
+  NC:=-C;   # NCx<=0
+  b:=ZeroMutable([1..Size(NC)]);
+  conlin:=ZeroMutable([1..Size(NC[1])]);  ## sum<=1
+  for j in [1..Jnet[2]] do
+    conlin[j]:=1;
+  od;
+  Append(NC,[conlin]);
+  Append(b,[1]);
+  SBL:=Add_constraints_firsthalf(NC,b,indi_P,Jnet);
+  G := Group( [ () ] );
+  rlist1:=symCHM( SBL[1], SBL[2], SBL[3], Jnet[3], G, OnProjPts, OnProjIneq, false );
+  rrA := [  ];
+  rrb := [  ];
+  for row  in rlist1[2]  do
+    if row[Size(row)]=0  then
+      Append( rrA, [ row{[ 1 .. Size( row ) - 1 ]} ] );
+      Append( rrb, [ row[Size( row )] ] );
+    fi;
+  od;
+  trans_ineq := [  ];
+  Oi := OrbitsDomain( G, rrA, OnProjIneq );
+  for O  in Oi  do
+    Append( trans_ineq, [ O[1] ] );
+  od;
+  return [ trans_ineq, RRparse( Jnet, trans_ineq ) ];
+end;
