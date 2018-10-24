@@ -101,6 +101,17 @@ return A;
 end;
 
 ##subfunction
+Permute_matrix_parallel:=function(B,A)
+local Bt,Bf,A1;
+Bt:=TransposedMat(B);
+Bt:=ShallowCopy(Bt);
+A1:=ShallowCopy(A);
+SortParallel(A1,Bt);
+Bf:=TransposedMat(Bt);
+return [Bf,A1];
+end;
+
+##subfunction
 Add_constraints_firsthalf:=function(proj_SH,proj_Sb,A1,ncinstance1)
 local conlin,i,numofMarginal,numofSour,linrows,con,j;
 i:=Size(proj_Sb)+1;
