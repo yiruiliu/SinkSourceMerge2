@@ -40,6 +40,28 @@ AddconstraintsTopAndBottom:=function(ncinstancetop)
 	fi;
 	return [ShOB1[1],ShOB1[2],linrows];
 end;
+##Project onto useful variables    SH_P*X<=Sb1 denotes the permuted shannon outer bound
+ProjectOntoUseful_Var:=function(SH_P,Sb1,numofVar,linrows)
+local proj_SH,proj_Sb,conlin,j,G,rlist;
+proj_SH:=ShallowCopy(SH_P);
+proj_Sb:=ShallowCopy(Sb1);
+    for j in [1..numofVar] do
+		conlin := ZeroMutable( [ 1 .. Size(SH_P[1]) ] );
+		conlin[j] := -1;
+		Append( proj_SH, [ conlin ] );
+		Append( proj_Sb, [ 0 ] );
+    od;
+    
+    conlin := ZeroMutable( [ 1 .. Size(SH_P[1]) ] );
+    for j  in [ 1 .. numofVar ]  do    #### sum<=1
+        conlin[j] :=1;
+    od;
+    Append( proj_SH, [ conlin ] );
+	Append( proj_Sb, [  1 ] );
+	G := Group( [ () ] );
+	rlist := symCHM( proj_SH, proj_Sb, linrows, numofVar, G, OnProjPts, OnProjIneq, false );
+	return rlist;
+end;
 
 Permute_matrix_parallel:=function(B,A)
 	local Bt,Bf,A1;
