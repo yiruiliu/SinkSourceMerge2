@@ -91,22 +91,32 @@ MatrixGetColumn:=function(A,index)   ##subfunction
 end;
 
 AddzeroColumn:=function(A,index)   ##subfunction
-	local AT, sortindex, v, w, i,Zvector;
-	sortindex:=ShallowCopy(index);
-	Sort(sortindex, function (v,w) return v>w; end);
+	local AT, v, w, i,Zvector,A1;
 	AT:=TransposedMat(A);
 	AT:=ShallowCopy(AT);
 	Zvector:=ZeroMutable([1..Size(AT[1])]);
-	for i in sortindex do
+	for i in index do
 		Add(AT,Zvector,i);
 	od;
-	Return TransposedMat(AT);
+	A1:=TransposedMat(AT);
+	return A1;
 end;
 
-AddcutProject:=function(rlisttop,rlistbottom,ncinstancecut,A1)
-	local Rlist,b,A,i,linrows,numofMarginal,numofSour,con,conlin,G,rlist1;
-	Rlist:=ShallowCopy(rlisttop[2]);
-	Append(Rlist,rlistbottom[2]);
+AddcutProject:=function(rlisttop,rlistbottom,ncinstancecut,A1,addzerocolumn_index)   #addzerocolumn_index:=[3,4]
+	local Rlist,bottom,Addbottom,top,b,A,i,linrows,numofMarginal,numofSour,con,conlin,G,rlist1;
+	if Size(rlisttop[2][1])>Size(rlistbottom[2][1]) then
+		Rlist:=ShallowCopy(rlisttop[2]);
+		bottom:=ShallowCopy(rlistbottom[2]);
+		Addbottom:=AddzeroColumn(bottom,addzerocolumn_index);
+		Append(Rlist,Addbottom);
+	elif Size(rlisttop[2][1])<Size(rlistbottom[2][1]) then
+		top:=ShallowCopy(rlisttop[2]);
+		Rlist:=AddzeroColumn(top,addzerocolumn_index);
+		Append(Rlist, rlistbottom[2]);
+	else
+		Rlist:=ShallowCopy(rlisttop[2]);
+		Append(Rlist,rlistbottom[2]);
+	fi;
 	b:=MatrixGetColumn(Rlist,Size(Rlist[1]));
 	b:=ShallowCopy(b);
 	A:=MatrixRemoveColumn(Rlist,Size(Rlist[1]));
@@ -139,26 +149,28 @@ end;
 
 ######## An example for main function
 #### ncinstancetop:=[[[[1,2],[1,2,3]],[[2,3],[2,3,4]],[[3],[3,5]],[[3,4],[3,4,6]]],2,8];
-#### ncinstancebottom:=[[[[7],[1,7]],[[7,8],[2,7,8]]],2,8];
+#### ncinstancebottom:=[[[[5],[1,5]],[[5,6],[2,5,6]]],2,6];
 #### ncinstancecut:=[[[[5,6],[5,6,7]],[[6,7],[6,7,8]]],2,8];
-#### cutVar:=[[[5,6],[5,6,7],[6,7],[6,7,8]],2,8];
+#### cutVar_top:=[[[5,6],[5,6,7],[6,7],[6,7,8]],2,8];
+#### cutVar_bottom:=[[[3,4],[3,4,5],[4,5],[4,5,6]],2,6];
 #### ncinstance:=[[[[1,2],[1,2,3]],[[2,3],[2,3,4]],[[3],[3,5]],[[3,4],[3,4,6]],[[5,6],[5,6,7]],[[6,7],[6,7,8]],[[7],[1,7]],[[7,8],[2,7,8]]],2,8];
-TopBottomPastingMain:=function(ncinstancetop,cutVar,ncinstancecut,ncinstancebottom,numofCutandSingle)
-	local SHLT,AA,A1,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
+TopBottomPastingMain:=function(ncinstancetop,cutVar_top,cutVar_bottom,ncinstancecut,ncinstancebottom,numofCutandSingle_top,numofCutandSingle_bottom,addzerocolumn_index)
+	local SHLT,AAT,AAB,A1,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
 	SHLT:=AddconstraintsTopAndBottom(ncinstancetop);
-	AA:=Permute_marginalAndJoin(cutVar);
-	SHTA:=Permute_matrix_parallel(SHLT[1],AA);
+	AAT:=Permute_marginalAndJoin(cutVar_top);
+	SHTA:=Permute_matrix_parallel(SHLT[1],AAT);
 	SHT_P:=SHTA[1];
 	SbT:=SHLT[2];
 	A1:=SHTA[2];
 	linrowsT:=SHLT[3];
-	rlistTop:=ProjectOntoUseful_Var(SHT_P,SbT,numofCutandSingle,linrowsT);
+	rlistTop:=ProjectOntoUseful_Var(SHT_P,SbT,numofCutandSingle_top,linrowsT);
 	SHLB:=AddconstraintsTopAndBottom(ncinstancebottom);
-	SHBA:=Permute_matrix_parallel(SHLB[1],AA);
+	AAB:=Permute_marginalAndJoin(cutVar_bottom);
+	SHBA:=Permute_matrix_parallel(SHLB[1],AAB);
 	SHB_P:=SHBA[1];
 	SbB:=SHLB[2];
 	linrowsB:=SHLB[3];
-	rlistBottom:=ProjectOntoUseful_Var(SHB_P,SbB,numofCutandSingle,linrowsB);
-	rlist1:=AddcutProject(rlistTop,rlistBottom,ncinstancecut,A1);
+	rlistBottom:=ProjectOntoUseful_Var(SHB_P,SbB,numofCutandSingle_bottom,linrowsB);
+	rlist1:=AddcutProject(rlistTop,rlistBottom,ncinstancecut,A1,addzerocolumn_index);
 	return rlist1;
 end;
