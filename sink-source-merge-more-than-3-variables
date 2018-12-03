@@ -112,6 +112,7 @@ AddcutProject:=function(rlisttop,rlistbottom,ncinstancecut,A1,addzerocolumn_inde
 	elif Size(rlisttop[2][1])<Size(rlistbottom[2][1]) then
 		top:=ShallowCopy(rlisttop[2]);
 		Rlist:=AddzeroColumn(top,addzerocolumn_index);
+		Rlist:=ShallowCopy(Rlist);
 		Append(Rlist, rlistbottom[2]);
 	else
 		Rlist:=ShallowCopy(rlisttop[2]);
@@ -155,7 +156,7 @@ end;
 #### cutVar_bottom:=[[[3,4],[3,4,5],[4,5],[4,5,6]],2,6];
 #### ncinstance:=[[[[1,2],[1,2,3]],[[2,3],[2,3,4]],[[3],[3,5]],[[3,4],[3,4,6]],[[5,6],[5,6,7]],[[6,7],[6,7,8]],[[7],[1,7]],[[7,8],[2,7,8]]],2,8];
 TopBottomPastingMain:=function(ncinstancetop,cutVar_top,cutVar_bottom,ncinstancecut,ncinstancebottom,numofCutandSingle_top,numofCutandSingle_bottom,addzerocolumn_index)
-	local SHLT,AAT,AAB,A1,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
+	local SHLT,AAT,AAB,A1,B1,AB,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
 	SHLT:=AddconstraintsTopAndBottom(ncinstancetop);
 	AAT:=Permute_marginalAndJoin(cutVar_top);
 	SHTA:=Permute_matrix_parallel(SHLT[1],AAT);
@@ -167,10 +168,16 @@ TopBottomPastingMain:=function(ncinstancetop,cutVar_top,cutVar_bottom,ncinstance
 	SHLB:=AddconstraintsTopAndBottom(ncinstancebottom);
 	AAB:=Permute_marginalAndJoin(cutVar_bottom);
 	SHBA:=Permute_matrix_parallel(SHLB[1],AAB);
+	B1:=SHBA[2];
+	if Size(A1)>Size(B1) then
+		AB:=A1;
+	else
+		AB:=B1;
+	fi;
 	SHB_P:=SHBA[1];
 	SbB:=SHLB[2];
 	linrowsB:=SHLB[3];
 	rlistBottom:=ProjectOntoUseful_Var(SHB_P,SbB,numofCutandSingle_bottom,linrowsB);
-	rlist1:=AddcutProject(rlistTop,rlistBottom,ncinstancecut,A1,addzerocolumn_index);
+	rlist1:=AddcutProject(rlistTop,rlistBottom,ncinstancecut,AB,addzerocolumn_index);
 	return rlist1;
 end;
