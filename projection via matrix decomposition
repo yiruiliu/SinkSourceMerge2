@@ -1,3 +1,16 @@
+int2set:=function(int)
+local k,q,r, A,Binary;
+	k:=int;
+	Binary:=[];
+	while k>0 do
+		r:=k mod 2;
+		k:=QuoInt(k,2);
+		Append(Binary,[r]);
+	od;
+	A:=Positions(Binary,1);
+	return A;
+end;
+
 ####subfunction for DD method
 returnfullrank:=function(M)
 	local vecsize,matsize,i,l,j,indicate;
