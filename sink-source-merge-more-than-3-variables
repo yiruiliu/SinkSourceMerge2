@@ -15,7 +15,7 @@ end;
 
 AddconstraintsTopAndBottom:=function(ncinstancetop)
 	local linrows,i,ShOB1,con,j,conlin;
-	ShOB1 := GenShannonUnBounded( ncinstancetop[3] );
+	ShOB1 := GenShannonBounded( ncinstancetop[3] );
 	i := Size( ShOB1[1] ) + 1;
 	linrows := [  ];
 	for con  in ncinstancetop[1]  do     #### H(Out(t),In(t))=H(In(t))
