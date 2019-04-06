@@ -12,7 +12,35 @@ Permute_marginalAndJoin:=function(ncinstance)
 	return A;
 end;
 
-AddconstraintsTopAndBottom:=function(ncinstancetop)
+AddconstraintsTopAndBottom_indep:=function(ncinstancetop)
+	local linrows,i,ShOB1,con,j,conlin;
+	ShOB1 := GenShannonUnBounded( ncinstancetop[3] );
+	i := Size( ShOB1[1] ) + 1;
+	linrows := [  ];
+	for con  in ncinstancetop[1]  do     #### H(Out(t),In(t))=H(In(t))
+		conlin := ZeroMutable( [ 1 .. 2 ^ ncinstancetop[3] - 1 ] );
+		conlin[set2int( con[1] )] := 1;
+		conlin[set2int( con[2] )] := -1;
+		Append( ShOB1[1], [ conlin ] );
+		Append( ShOB1[2], [ 0 ] );
+		Append( linrows, [ i ] );
+		i := i + 1;
+	od;
+	conlin := ZeroMutable( [ 1 .. 2 ^ ncinstancetop[3] - 1 ] );
+	if ncinstancetop[2]>1 then
+		for j  in [ 1 .. ncinstancetop[2] ]  do    #### H(s1,s2,..,sj)=H(s1)+H(s2)+,...,+H(sj)
+			conlin[set2int( [ j ] )] := 1;
+		od;
+		conlin[set2int( [ 1 .. ncinstancetop[2] ] )] := -1;
+		Append( ShOB1[1], [ conlin ] );
+		Append( ShOB1[2], [ 0 ] );
+		Append( linrows, [ i ] );
+		i := i + 1;
+	fi;
+	return [ShOB1[1],ShOB1[2],linrows];
+end;
+
+AddconstraintsTopAndBottom_noindep:=function(ncinstancetop)
 	local linrows,i,ShOB1,con,j,conlin;
 	ShOB1 := GenShannonUnBounded( ncinstancetop[3] );
 	i := Size( ShOB1[1] ) + 1;
@@ -139,15 +167,15 @@ AddcutProject:=function(rlisttop,rlistbottom,ncinstancecut,A1,addzerocolumn_inde
 end;
 
 ######## An example for main function
-#### ncinstancetop:=[[[[2,4],[2,4,5]],[[4,5],[2,4,5]]],3,6];
+#### ncinstancetop:=[[[[2,4],[2,4,5]],[[4,5],[2,4,5]],[[1,2],[1,2,4]],[[6],[1,6]],[[3,4],[3,4,5]]],3,6];
 #### ncinstancebottom:=[[[[5],[1,5]],[[5,6],[2,5,6]]],2,6];
 #### ncinstancecut:=[[[[5,6],[5,6,7]],[[6,7],[6,7,8]]],2,8];
-#### cutVar_top:=[[[1,2,3],[1,6],[2,4],[3,4,6],[1,2],[1,2,4]],3,6];
+#### cutVar_top:=[[[3,6]],3,6];
 #### cutVar_bottom:=[[[3,4],[3,4,5],[4,5],[4,5,6]],2,6];
 #### ncinstance:=[[[[1,2],[1,2,3]],[[2,3],[2,3,4]],[[3],[3,5]],[[3,4],[3,4,6]],[[5,6],[5,6,7]],[[6,7],[6,7,8]],[[7],[1,7]],[[7,8],[2,7,8]]],2,8];
 TopBottomPastingMain:=function(ncinstancetop,cutVar_top,cutVar_bottom,ncinstancecut,ncinstancebottom,numofCutandSingle_top,numofCutandSingle_bottom,addzerocolumn_index)
 	local SHLT,AAT,AAB,A1,B1,AB,SHTA,SHT_P,SbT,linrowsT,rlistTop,SHLB,SHBA,SHB_P,SbB,linrowsB,rlistBottom,rlist1;
-	SHLT:=AddconstraintsTopAndBottom(ncinstancetop);
+	SHLT:=AddconstraintsTopAndBottom_indep(ncinstancetop);
 	AAT:=Permute_marginalAndJoin(cutVar_top);
 	SHTA:=Permute_matrix_parallel(SHLT[1],AAT);
 	SHT_P:=SHTA[1];
@@ -155,7 +183,7 @@ TopBottomPastingMain:=function(ncinstancetop,cutVar_top,cutVar_bottom,ncinstance
 	A1:=SHTA[2];
 	linrowsT:=SHLT[3];
 	rlistTop:=ProjectOntoUseful_Var(SHT_P,SbT,numofCutandSingle_top,linrowsT);
-	SHLB:=AddconstraintsTopAndBottom(ncinstancebottom);
+	SHLB:=AddconstraintsTopAndBottom_noindep(ncinstancebottom);
 	AAB:=Permute_marginalAndJoin(cutVar_bottom);
 	SHBA:=Permute_matrix_parallel(SHLB[1],AAB);
 	B1:=SHBA[2];
