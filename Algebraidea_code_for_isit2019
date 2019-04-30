@@ -1,3 +1,5 @@
+
+
 int2set:=function(int)
 local k,q,r, A,Binary;
 	k:=int;
@@ -359,4 +361,26 @@ BtoMarginal:=function(Atop_cut,Abottom_cut,indi_P,Jnet)
 		Append( trans_ineq, [ O[1] ] );
 	od;
 	return [ trans_ineq, RRparse( Jnet, trans_ineq ) ];
+end;
+
+VecCrossProduct:=function(vec1,vec2)
+	local l,i,Vec;
+	l:=Size(vec1);
+	Vec:=ZeroMutable([1..l]);
+	for i in [1..l] do
+		Vec[i]:=vec1[i]*vec2[i];
+	od;
+	return Vec;
+end;
+
+### list1 is list of index of coefficient of equality, list2 is the coefficient of equality
+RemoveVariable:=function(AT,list1,list2)
+local i,x1,x2,vec;
+x1:=ShallowCopy(AT[list1[1]]);
+for i in [2..Size(list1)] do;
+	x2:=list2[i]*ShallowCopy(AT[list1[i]]);
+	vec:=VecCrossProduct(x2,x1);
+	AT[list1[i]]:=AT[list1[i]]+vec;
+od;
+return AT;
 end;
