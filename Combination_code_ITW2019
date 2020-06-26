@@ -71,7 +71,7 @@ proj_Sb:=ShallowCopy(Sb1);
     od;
     
     conlin := ZeroMutable( [ 1 .. Size(SH_P[1]) ] );
-    for j  in [ 1 .. numofVar ]  do    #### sum<=1
+    for j  in [ 1 .. Size(conlin) ]  do    #### sum<=1
         conlin[j] :=1;
     od;
     Append( proj_SH, [ conlin ] );
