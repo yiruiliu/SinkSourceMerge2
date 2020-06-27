@@ -100,6 +100,14 @@ MatrixRemoveColumn:=function(A,index)  ##subfunction
 	return Af;
 end;
 
+HalfZeroHalfOneVec:=function(OneLen,WholeLen)   ##subfuntion
+	local a1,b1,a;
+	a1 := ZeroMutable([1..OneLen]) + 1;
+	b1 := ZeroMutable([1..WholeLen - OneLen]);
+	a := Concatination(a1,b1);
+	return a;
+end;
+
 MatrixGetColumn:=function(A,index)   ##subfunction
 	local AT,b;
 	AT:=TransposedMat(A);
