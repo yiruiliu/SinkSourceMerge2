@@ -1,5 +1,6 @@
 ###### The following code works when projecting from Shannon outer bound.
 Permute_marginalAndJoin:=function(ncinstance)
+####example ncinstance:=[[[3,6]],3,6]; permute columns of A such that the first 7 columns are [1],..[6],[3,6]
 	local A,numofVar,i;
 	numofVar:=ncinstance[3];
 	A:=[set2int([numofVar])+2^numofVar..set2int([numofVar])+2^(numofVar+1)-2];
